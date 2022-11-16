@@ -20,7 +20,7 @@
       perSystem = { self', config, inputs', pkgs, lib, ... }: {
         # "haskellProjects" comes from https://github.com/srid/haskell-flake
         haskellProjects.project = {
-          root = ./.;
+          packages.NixHaskellIndex.root = ./.;
           buildTools = hp: {
             inherit (pkgs)
               treefmt
@@ -56,7 +56,7 @@
             in
             builtins.toJSON data;
         };
-        packages.default = config.packages.project;
+        packages.default = config.packages.project-NixHaskellIndex;
         devShells.default = config.devShells.project;
       };
     };

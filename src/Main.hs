@@ -117,11 +117,8 @@ renderBody rp model r = do
             forM_ vers $ \Pkg {..} -> do
               H.li $ do
                 H.code (H.toHtml name) <> " (" <> H.toHtml version <> ")"
-        "You are on the index page. Want to see "
-        routeLink rp HtmlRoute_About "About"
-        "?"
       HtmlRoute_About -> do
-        "You are on the about page."
+        "This site is a WIP. About: nixpkgs has multiple versions of the same Haskell package: https://github.com/srid/NixHaskellIndex"
     H.a ! A.href (staticRouteUrl rp model "logo.svg") $ do
       H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
 
