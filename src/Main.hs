@@ -30,10 +30,27 @@ data Model = Model
   }
   deriving stock (Eq, Show, Generic)
 
-data HtmlRoute
-  = HtmlRoute_Index
-  | HtmlRoute_About
+data ListingRoute
+  = ListingRoute_MultiVersion
+  | ListingRoute_All
   deriving stock (Show, Eq, Ord, Generic, Enum, Bounded)
+  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
+  deriving
+    (HasSubRoutes, HasSubModels, IsRoute)
+    via ( GenericRoute
+            ListingRoute
+            '[ WithModel ()
+             , WithSubRoutes
+                '[ FileRoute "index.html"
+                 , FileRoute "all.html"
+                 ]
+             ]
+        )
+
+data HtmlRoute
+  = HtmlRoute_Index ListingRoute
+  | HtmlRoute_About
+  deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
   deriving
     (HasSubRoutes, HasSubModels, IsRoute)
@@ -41,7 +58,7 @@ data HtmlRoute
             HtmlRoute
             '[ WithModel ()
              , WithSubRoutes
-                '[ FileRoute "index.html"
+                '[ ListingRoute
                  , FileRoute "about.html"
                  ]
              ]
@@ -109,8 +126,12 @@ renderBody rp model r = do
     renderNavbar rp r
     H.h1 ! A.class_ "text-3xl font-bold" $ H.toHtml $ routeTitle r
     case r of
-      HtmlRoute_Index -> do
-        let pkgs' = Map.filter (\xs -> length xs > 1) $ modelPackages model
+      HtmlRoute_Index lr -> do
+        let pkgs' = case lr of
+              ListingRoute_All -> modelPackages model
+              ListingRoute_MultiVersion -> Map.filter (\xs -> length xs > 1) $ modelPackages model
+        H.div ! A.class_ "bg-red-200 p-2 m-2" $ do
+          H.header $ H.text "WARNING: This site is a WIP"
         forM_ (Map.toList pkgs') $ \(k, vers) -> do
           H.div $ do
             H.header ! A.class_ "font-bold text-xl mt-2" $ H.toHtml k
@@ -125,7 +146,7 @@ renderBody rp model r = do
 renderNavbar :: Prism' FilePath Route -> HtmlRoute -> H.Html
 renderNavbar rp currentRoute =
   H.nav ! A.class_ "w-full text-xl font-bold flex space-x-4  mb-4" $ do
-    forM_ (universe @HtmlRoute) $ \r ->
+    forM_ ((HtmlRoute_Index <$> universe @ListingRoute) <> [HtmlRoute_About]) $ \r ->
       let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
        in H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
             ! A.class_ ("rounded p-2 " <> extraClass)
@@ -133,7 +154,8 @@ renderNavbar rp currentRoute =
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
-  HtmlRoute_Index -> "Home"
+  HtmlRoute_Index ListingRoute_All -> "All packages"
+  HtmlRoute_Index ListingRoute_MultiVersion -> "Packages with more than one version"
   HtmlRoute_About -> "About"
 
 routeLink :: Prism' FilePath Route -> HtmlRoute -> H.Html -> H.Html
