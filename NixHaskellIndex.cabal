@@ -30,7 +30,9 @@ executable NixHaskellIndex
     , containers
     , data-default
     , directory
-    , ema                   >=0.8.2
+    , ema                   >=0.9
+    , ema-extra             >=0.9
+    , ema-generics          >=0.9
     , filepath
     , generic-optics
     , generics-sop
