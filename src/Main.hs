@@ -139,7 +139,7 @@ renderBody rp model r = do
               H.li $ do
                 H.code (H.toHtml name) <> " (" <> H.toHtml version <> ")"
       HtmlRoute_About -> do
-        "This site is a WIP. About: nixpkgs has multiple versions of the same Haskell package: https://github.com/srid/NixHaskellIndex"
+        "WIP: https://github.com/srid/NixHaskellIndex"
     H.a ! A.href (staticRouteUrl rp model "logo.svg") $ do
       H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
 
