@@ -40,6 +40,7 @@
           overrides = self: super: with pkgs.haskell.lib; {
             inherit (inputs'.tailwind-haskell.packages)
               tailwind;
+            ema = dontCheck super.ema;
           };
         };
         apps.tailwind.program = inputs'.tailwind-haskell.packages.tailwind;

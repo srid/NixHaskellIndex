@@ -33,6 +33,7 @@ executable NixHaskellIndex
     , ema                   >=0.8.2
     , filepath
     , generic-optics
+    , generics-sop
     , monad-logger
     , optics-core
     , optparse-applicative

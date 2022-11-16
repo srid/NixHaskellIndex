@@ -6,8 +6,9 @@ module Main where
 import Data.Generics.Sum.Any (AsAny (_As))
 import Ema
 import Ema.CLI qualified
-import Ema.Route.Generic.TH
+import Ema.Route.Generic
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
+import Generics.SOP qualified as SOP
 import Optics.Core (Prism', (%))
 import Options.Applicative
 import Text.Blaze.Html.Renderer.Utf8 qualified as RU
@@ -25,9 +26,18 @@ data HtmlRoute
   = HtmlRoute_Index
   | HtmlRoute_About
   deriving stock (Show, Eq, Ord, Generic, Enum, Bounded)
-
-deriveGeneric ''HtmlRoute
-deriveIsRoute ''HtmlRoute [t|'[]|]
+  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
+  deriving
+    (HasSubRoutes, HasSubModels, IsRoute)
+    via ( GenericRoute
+            HtmlRoute
+            '[ WithModel ()
+             , WithSubRoutes
+                '[ FileRoute "index.html"
+                 , FileRoute "about.html"
+                 ]
+             ]
+        )
 
 type StaticRoute = SR.StaticRoute "static"
 
@@ -35,17 +45,22 @@ data Route
   = Route_Html HtmlRoute
   | Route_Static StaticRoute
   deriving stock (Eq, Show, Ord, Generic)
-
-deriveGeneric ''Route
-deriveIsRoute
-  ''Route
-  [t|
-    [ -- To render a `Route` we need `Model`
-      WithModel Model
-    , -- Override default sub-route encoding (to avoid the folder prefix in encoded URLs)
-      WithSubRoutes [HtmlRoute, StaticRoute]
-    ]
-    |]
+  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
+  deriving
+    (HasSubRoutes, HasSubModels, IsRoute)
+    via ( GenericRoute
+            Route
+            '[ WithModel Model
+             , WithSubModels
+                '[ ()
+                 , SR.Model
+                 ]
+             , WithSubRoutes
+                '[ HtmlRoute
+                 , StaticRoute
+                 ]
+             ]
+        )
 
 instance EmaSite Route where
   type SiteArg Route = CliArgs
