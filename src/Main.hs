@@ -1,9 +1,12 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Main where
 
+import Data.Aeson
+import Data.Aeson qualified as Aeson
 import Data.Generics.Sum.Any (AsAny (_As))
+import Data.Map.Strict qualified as Map
 import Ema
 import Ema.CLI qualified
 import Ema.Route.Generic
@@ -16,9 +19,14 @@ import Text.Blaze.Html5 ((!))
 import Text.Blaze.Html5 qualified as H
 import Text.Blaze.Html5.Attributes qualified as A
 
+data Pkg = Pkg {name :: Text, pname :: Text, version :: Text}
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (FromJSON)
+
 data Model = Model
   { modelBaseUrl :: Text
   , modelStatic :: SR.Model
+  , modelPackages :: Map Text [Pkg]
   }
   deriving stock (Eq, Show, Generic)
 
@@ -66,7 +74,11 @@ instance EmaSite Route where
   type SiteArg Route = CliArgs
   siteInput cliAct args = do
     staticRouteDyn <- siteInput @StaticRoute cliAct ()
-    pure $ Model (cliArgsBaseUrl args) <$> staticRouteDyn
+    -- HACK: properly thread through nix package here.
+    liftIO (Aeson.eitherDecodeFileStrict' "data") >>= \case
+      Left err -> error $ toText err
+      Right pkgs ->
+        pure $ Model (cliArgsBaseUrl args) <$> staticRouteDyn <*> pure pkgs
   siteOutput rp m = \case
     Route_Html r ->
       pure $ Ema.AssetGenerated Ema.Html $ renderHtmlRoute rp m r
@@ -87,7 +99,7 @@ renderHead :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
 renderHead rp model r = do
   H.meta ! A.charset "UTF-8"
   H.meta ! A.name "viewport" ! A.content "width=device-width, initial-scale=1"
-  H.title $ H.toHtml $ routeTitle r <> " - Ema Template"
+  H.title $ H.toHtml $ routeTitle r <> " - Nix Haskell Index"
   H.base ! A.href (H.toValue $ modelBaseUrl model)
   H.link ! A.rel "stylesheet" ! A.href (staticRouteUrl rp model "tailwind.css")
 
@@ -98,6 +110,13 @@ renderBody rp model r = do
     H.h1 ! A.class_ "text-3xl font-bold" $ H.toHtml $ routeTitle r
     case r of
       HtmlRoute_Index -> do
+        let pkgs' = Map.filter (\xs -> length xs > 1) $ modelPackages model
+        forM_ (Map.toList pkgs') $ \(k, vers) -> do
+          H.div $ do
+            H.header ! A.class_ "font-bold text-xl mt-2" $ H.toHtml k
+            forM_ vers $ \Pkg {..} -> do
+              H.li $ do
+                H.code (H.toHtml name) <> " (" <> H.toHtml version <> ")"
         "You are on the index page. Want to see "
         routeLink rp HtmlRoute_About "About"
         "?"

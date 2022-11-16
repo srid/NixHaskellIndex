@@ -17,9 +17,9 @@
       imports = [
         haskell-flake.flakeModule
       ];
-      perSystem = { self', inputs', pkgs, ... }: {
+      perSystem = { self', config, inputs', pkgs, lib, ... }: {
         # "haskellProjects" comes from https://github.com/srid/haskell-flake
-        haskellProjects.default = {
+        haskellProjects.project = {
           root = ./.;
           buildTools = hp: {
             inherit (pkgs)
@@ -45,6 +45,19 @@
           };
         };
         apps.tailwind.program = inputs'.tailwind-haskell.packages.tailwind;
+        packages.data = pkgs.writeTextFile {
+          name = "data";
+          text =
+            let
+              data = builtins.groupBy (x: x.pname)
+                (lib.mapAttrsToList (n: v: { name = n; inherit (v) pname version; })
+                  (lib.filterAttrs (n: v: builtins.typeOf v == "set" && lib.hasAttr "pname" v)
+                    pkgs.haskellPackages));
+            in
+            builtins.toJSON data;
+        };
+        packages.default = config.packages.project-NixHaskellIndex;
+        devShells.default = config.devShells.project;
       };
     };
 }
