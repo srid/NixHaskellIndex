@@ -56,7 +56,7 @@
             in
             builtins.toJSON data;
         };
-        packages.default = config.packages.project-NixHaskellIndex;
+        packages.default = config.packages.project;
         devShells.default = config.devShells.project;
       };
     };
