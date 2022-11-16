@@ -138,8 +138,8 @@ parseCliArgs =
       info
         (versionOption <*> p <**> helper)
         ( fullDesc
-            <> progDesc "ema-template: TODO"
-            <> header "ema-template"
+            <> progDesc "NixHaskellIndex: TODO"
+            <> header "NixHaskellIndex"
         )
       where
         versionOption = infoOption "0.1" (long "version" <> help "Show version")
