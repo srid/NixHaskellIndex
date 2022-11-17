@@ -42,7 +42,7 @@ renderHtmlRoute rp m r = do
     H.html ! A.lang "en" $ do
       H.head $ do
         renderHead rp m r
-      H.body $ do
+      H.body ! A.class_ "overflow-y-scroll" $ do
         renderBody rp m r
 
 renderHead :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
@@ -73,8 +73,7 @@ renderNavbar rp currentRoute =
        in H.a
             ! A.href (H.toValue $ View.routeUrl rp $ Route_Html r)
             ! A.class_ ("rounded p-2 " <> extraClass)
-            $ H.toHtml $
-              routeTitle r
+            $ H.toHtml (routeTitle r)
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
