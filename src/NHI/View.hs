@@ -39,14 +39,14 @@ renderRoute rp packages = \case
       "."
 
 renderVersions :: Text -> NonEmpty Pkg -> H.Html
-renderVersions pname vers =
+renderVersions k vers =
   H.div ! A.class_ "flex flex-col" $ do
     forM_ vers $ \Pkg {..} -> do
       H.div ! A.class_ "py-0.5 flex flex-row space-x-2" $ do
         H.code (H.toHtml name)
         H.span ! A.class_ "bg-purple-100 font-mono small rounded" $ do
           H.toHtml version
-        when (pname == name) $ do
+        when (length vers > 1 && k == name) $ do
           H.span ! A.class_ "bg-green-200 px-0.5 font-bold small rounded" $ do
             "default"
 
