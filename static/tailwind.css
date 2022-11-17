@@ -717,10 +717,6 @@ select {
   position: static;
 }
 
-.m-2 {
-  margin: 0.5rem;
-}
-
 .mx-auto {
   margin-left: auto;
   margin-right: auto;
@@ -739,16 +735,12 @@ select {
   margin-bottom: 1rem;
 }
 
-.mt-2 {
-  margin-top: 0.5rem;
-}
-
-.mt-1 {
-  margin-top: 0.25rem;
-}
-
 .mt-4 {
   margin-top: 1rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
 }
 
 .flex {
@@ -763,24 +755,12 @@ select {
   width: 100%;
 }
 
-.w-64 {
-  width: 16rem;
-}
-
 .flex-row {
   flex-direction: row;
 }
 
 .flex-col {
   flex-direction: column;
-}
-
-.justify-items-start {
-  justify-items: start;
-}
-
-.justify-items-end {
-  justify-items: end;
 }
 
 .space-x-4 > :not([hidden]) ~ :not([hidden]) {
@@ -803,34 +783,19 @@ select {
   border-radius: 0.25rem;
 }
 
-.bg-rose-400 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(251 113 133 / var(--tw-bg-opacity));
-}
-
 .bg-red-200 {
   --tw-bg-opacity: 1;
   background-color: rgb(254 202 202 / var(--tw-bg-opacity));
 }
 
-.bg-purple-200 {
+.bg-rose-400 {
   --tw-bg-opacity: 1;
-  background-color: rgb(233 213 255 / var(--tw-bg-opacity));
+  background-color: rgb(251 113 133 / var(--tw-bg-opacity));
 }
 
 .bg-purple-100 {
   --tw-bg-opacity: 1;
   background-color: rgb(243 232 255 / var(--tw-bg-opacity));
-}
-
-.bg-green-100 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(220 252 231 / var(--tw-bg-opacity));
-}
-
-.bg-green-300 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(134 239 172 / var(--tw-bg-opacity));
 }
 
 .bg-green-200 {
@@ -840,14 +805,6 @@ select {
 
 .p-2 {
   padding: 0.5rem;
-}
-
-.p-0\.5 {
-  padding: 0.125rem;
-}
-
-.p-0 {
-  padding: 0px;
 }
 
 .py-4 {
@@ -863,11 +820,6 @@ select {
 .py-0 {
   padding-top: 0px;
   padding-bottom: 0px;
-}
-
-.py-2 {
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
 }
 
 .px-0\.5 {
@@ -913,13 +865,12 @@ select {
   color: rgb(251 113 133 / var(--tw-text-opacity));
 }
 
-.filter {
-  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+.underline {
+  text-decoration-line: underline;
 }
 
-.hover\:bg-red-200:hover {
-  --tw-bg-opacity: 1;
-  background-color: rgb(254 202 202 / var(--tw-bg-opacity));
+.filter {
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 
 .hover\:underline:hover {
