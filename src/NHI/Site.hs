@@ -54,7 +54,7 @@ renderBody rp model r = do
   H.div ! A.class_ "container mx-auto mt-8 p-2" $ do
     renderNavbar rp r
     H.h1 ! A.class_ "text-3xl font-bold" $ H.toHtml $ routeTitle r
-    View.renderRoute (modelPackages model) r
+    View.renderRoute rp (modelPackages model) r
     H.a ! A.href (staticRouteUrl rp model "logo.svg") $ do
       H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
 
@@ -73,6 +73,7 @@ routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
   HtmlRoute_Index ListingRoute_All -> "All packages"
   HtmlRoute_Index ListingRoute_MultiVersion -> "Packages with more than one version"
+  HtmlRoute_Package pname -> pname
   HtmlRoute_About -> "About"
 
 routeLink :: Prism' FilePath Route -> HtmlRoute -> H.Html -> H.Html

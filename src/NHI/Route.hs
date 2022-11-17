@@ -2,11 +2,14 @@
 
 module NHI.Route where
 
+import Data.Map.Strict qualified as Map
 import Ema
 import Ema.Route.Generic
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
+import Ema.Route.Prism
 import Generics.SOP qualified as SOP
 import NHI.Types (Pkg (..))
+import Optics.Core
 
 data Model = Model
   { modelBaseUrl :: Text
@@ -32,8 +35,29 @@ data ListingRoute
              ]
         )
 
+-- | A route represented by a stringy type; associated with a foldable of the same as its model.
+newtype StringRoute (a :: Type) r = StringRoute {unStringRoute :: r}
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
+
+instance (IsString r, ToString r, Eq r, Ord r) => IsRoute (StringRoute a r) where
+  type RouteModel (StringRoute a r) = Map r a
+  routePrism as =
+    toPrism_ $
+      htmlSuffixPrism
+        % iso fromString toString
+        % mapMemberPrism as
+        % coercedTo
+    where
+      mapMemberPrism m =
+        prism' id $ \r -> r <$ guard (r `Map.member` m)
+  routeUniverse as = StringRoute <$> Map.keys as
+
+type PackageRoute = StringRoute [Pkg] Text
+
 data HtmlRoute
   = HtmlRoute_Index ListingRoute
+  | HtmlRoute_Package Text
   | HtmlRoute_About
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
@@ -41,9 +65,10 @@ data HtmlRoute
     (HasSubRoutes, HasSubModels, IsRoute)
     via ( GenericRoute
             HtmlRoute
-            '[ WithModel ()
+            '[ WithModel (Map Text [Pkg])
              , WithSubRoutes
                 '[ ListingRoute
+                 , FolderRoute "p" PackageRoute
                  , FileRoute "about.html"
                  ]
              ]
@@ -62,7 +87,7 @@ data Route
             Route
             '[ WithModel Model
              , WithSubModels
-                '[ ()
+                '[ Map Text [Pkg]
                  , SR.Model
                  ]
              , WithSubRoutes
