@@ -57,6 +57,8 @@ renderBody :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
 renderBody rp model r = do
   H.div ! A.class_ "container mx-auto mt-8 p-2" $ do
     renderNavbar rp r
+    H.div ! A.class_ "bg-red-200 p-2 my-2" $ do
+      H.header $ H.text "WARNING: This site is a WIP"
     H.h1 ! A.class_ "text-3xl font-bold" $ H.toHtml $ routeTitle r
     View.renderRoute rp (modelPackages model) r
     H.a ! A.href (staticRouteUrl rp model "logo.svg") $ do
@@ -70,8 +72,8 @@ renderNavbar rp currentRoute =
        in H.a
             ! A.href (H.toValue $ View.routeUrl rp $ Route_Html r)
             ! A.class_ ("rounded p-2 " <> extraClass)
-            $ H.toHtml
-            $ routeTitle r
+            $ H.toHtml $
+              routeTitle r
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of

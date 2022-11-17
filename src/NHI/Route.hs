@@ -12,7 +12,7 @@ import NHI.Types (Pkg (..))
 data Model = Model
   { modelBaseUrl :: Text
   , modelStatic :: SR.Model
-  , modelPackages :: Map Text [Pkg]
+  , modelPackages :: Map Text (NonEmpty Pkg)
   }
   deriving stock (Eq, Show, Generic)
 
@@ -43,10 +43,10 @@ data HtmlRoute
     (HasSubRoutes, HasSubModels, IsRoute)
     via ( GenericRoute
             HtmlRoute
-            '[ WithModel (Map Text [Pkg])
+            '[ WithModel (Map Text (NonEmpty Pkg))
              , WithSubRoutes
                 '[ ListingRoute
-                 , FolderRoute "p" (StringRoute [Pkg] Text)
+                 , FolderRoute "p" (StringRoute (NonEmpty Pkg) Text)
                  , FileRoute "about.html"
                  ]
              ]
