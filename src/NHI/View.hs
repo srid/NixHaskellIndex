@@ -29,8 +29,16 @@ renderRoute rp packages = \case
         renderVersions k vers
   HtmlRoute_Package name -> do
     let vers = fromJust $ Map.lookup name packages
-    H.div $ do
+    H.div ! A.class_ "mt-4" $ do
       renderVersions name vers
+    H.div ! A.class_ "mt-8" $ do
+      H.pre ! A.class_ "bg-gray-700 text-white p-2 my-2 rounded" $ do
+        H.code $ do
+          H.toHtml @Text "$ # You may inspect the packages above in nix repl\n"
+          H.toHtml @Text "$ nix repl nixpkgs\n"
+          H.toHtml @Text $ "nix-repl> pkgs = legacyPackages.${builtins.currentSystem}\n"
+          H.toHtml @Text $ "nix-repl> pkgs.haskellPackages." <> name <> "  # Hit <tab> here to autocomplete versions\n"
+          H.toHtml @Text "«derivation /nix/store/???.drv»"
   HtmlRoute_About -> do
     H.p ! A.class_ "mt-2" $ do
       "Did you know that Haskell libraries on nixpkgs may have more than one version defined? And that the default or available versions do not necessarily correspond to that of Stackage LTS?"
