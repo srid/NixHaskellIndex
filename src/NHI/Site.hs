@@ -15,6 +15,7 @@ import NHI.Route
 import NHI.View qualified as View
 import Optics.Core (Prism', (%))
 import Options.Applicative
+import System.Environment (getEnv)
 import Text.Blaze.Html.Renderer.Utf8 qualified as RU
 import Text.Blaze.Html5 ((!))
 import Text.Blaze.Html5 qualified as H
@@ -24,8 +25,7 @@ instance EmaSite Route where
   type SiteArg Route = CliArgs
   siteInput cliAct args = do
     staticRouteDyn <- siteInput @StaticRoute cliAct ()
-    -- HACK: properly thread through nix package here.
-    liftIO (Aeson.eitherDecodeFileStrict' "data") >>= \case
+    liftIO (Aeson.eitherDecodeFileStrict' =<< getEnv "DATAFILE") >>= \case
       Left err -> error $ toText err
       Right pkgs ->
         pure $ Model (cliArgsBaseUrl args) <$> staticRouteDyn <*> pure pkgs

@@ -42,6 +42,9 @@
             inherit (inputs'.tailwind-haskell.packages)
               tailwind;
             ema-generics = dontCheck super.ema-generics;
+            NixHaskellIndex = super.NixHaskellIndex.overrideAttrs (old: {
+              DATAFILE = config.packages.data;
+            });
           };
         };
         apps.tailwind.program = inputs'.tailwind-haskell.packages.tailwind;
@@ -52,7 +55,9 @@
             in builtins.toJSON data;
         };
         packages.default = config.packages.project-NixHaskellIndex;
-        devShells.default = config.devShells.project;
+        devShells.default = config.devShells.project.overrideAttrs (old: {
+          DATAFILE = config.packages.data;
+        });
       };
     };
 }
