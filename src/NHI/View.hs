@@ -51,6 +51,7 @@ renderRoute rp NixData {..} = \case
       "The data on this site is based on "
       let url = "https://github.com/NixOS/nixpkgs/tree/" <> nixpkgsRev
       H.a ! A.class_ "underline" ! A.href (H.toValue url) $ H.toHtml $ "github:NixOS/nixpkgs/" <> nixpkgsRev
+      " as evaluated on x86_64-linux."
 
 renderVersions :: Text -> NonEmpty Pkg -> H.Html
 renderVersions k vers =
