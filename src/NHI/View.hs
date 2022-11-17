@@ -12,15 +12,15 @@ import Text.Blaze.Html5 ((!))
 import Text.Blaze.Html5 qualified as H
 import Text.Blaze.Html5.Attributes qualified as A
 
-renderRoute :: Prism' FilePath Route -> Map Text (NonEmpty Pkg) -> HtmlRoute -> H.Html
-renderRoute rp packages = \case
+renderRoute :: Prism' FilePath Route -> NixData -> HtmlRoute -> H.Html
+renderRoute rp NixData {..} = \case
   HtmlRoute_Index lr -> do
     let pkgs' = case lr of
-          ListingRoute_All -> packages
+          ListingRoute_All -> haskellPackages
           ListingRoute_MultiVersion ->
-            Map.filter (\xs -> length xs > 1) packages
+            Map.filter (\xs -> length xs > 1) haskellPackages
           ListingRoute_Broken ->
-            Map.filter (any (\Pkg {..} -> broken)) packages
+            Map.filter (any (\Pkg {..} -> broken)) haskellPackages
     forM_ (Map.toList pkgs') $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-4 hover:underline" $
@@ -28,14 +28,14 @@ renderRoute rp packages = \case
             H.toHtml k
         renderVersions k vers
   HtmlRoute_Package name -> do
-    let vers = fromJust $ Map.lookup name packages
+    let vers = fromJust $ Map.lookup name haskellPackages
     H.div ! A.class_ "mt-4" $ do
       renderVersions name vers
     H.div ! A.class_ "mt-8" $ do
       H.pre ! A.class_ "bg-gray-700 text-white p-2 my-2 rounded" $ do
         H.code $ do
           H.toHtml @Text "$ # You may inspect the packages above in nix repl\n"
-          H.toHtml @Text "$ nix repl nixpkgs\n"
+          H.toHtml @Text $ "$ nix repl github:NixOS/nixpkgs/" <> nixpkgsRev <> "\n"
           H.toHtml @Text $ "nix-repl> pkgs = legacyPackages.${builtins.currentSystem}\n"
           H.toHtml @Text $ "nix-repl> pkgs.haskellPackages." <> name <> "  # Hit <tab> here to autocomplete versions\n"
           H.toHtml @Text "«derivation /nix/store/???.drv»"
@@ -47,6 +47,10 @@ renderRoute rp packages = \case
       " See the source "
       H.a ! A.class_ "underline" ! A.href "https://github.com/srid/NixHaskellIndex" $ "here"
       "."
+    H.p ! A.class_ "mt-2" $ do
+      "The data on this site is based on "
+      let url = "https://github.com/NixOS/nixpkgs/tree/" <> nixpkgsRev
+      H.a ! A.class_ "underline" ! A.href (H.toValue url) $ H.toHtml $ "github:NixOS/nixpkgs/" <> nixpkgsRev
 
 renderVersions :: Text -> NonEmpty Pkg -> H.Html
 renderVersions k vers =

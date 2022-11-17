@@ -48,7 +48,7 @@
         packages.data = pkgs.writeTextFile {
           name = "data";
           text =
-            let data = import ./src/NHI/data.nix { inherit pkgs lib; };
+            let data = import ./src/NHI/data.nix { inherit inputs pkgs lib; };
             in builtins.toJSON data;
         };
         packages.default = config.packages.project-NixHaskellIndex;

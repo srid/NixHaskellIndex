@@ -7,12 +7,12 @@ import Ema.Route.Generic
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
 import Ema.Route.Lib.Extra.StringRoute (StringRoute (StringRoute))
 import Generics.SOP qualified as SOP
-import NHI.Types (Pkg (..))
+import NHI.Types (NixData, Pkg (..))
 
 data Model = Model
   { modelBaseUrl :: Text
   , modelStatic :: SR.Model
-  , modelPackages :: Map Text (NonEmpty Pkg)
+  , modelData :: NixData
   }
   deriving stock (Eq, Show, Generic)
 
@@ -45,7 +45,7 @@ data HtmlRoute
     (HasSubRoutes, HasSubModels, IsRoute)
     via ( GenericRoute
             HtmlRoute
-            '[ WithModel (Map Text (NonEmpty Pkg))
+            '[ WithModel NixData
              , WithSubRoutes
                 '[ ListingRoute
                  , FolderRoute "p" (StringRoute (NonEmpty Pkg) Text)
