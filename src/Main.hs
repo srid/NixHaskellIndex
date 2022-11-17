@@ -3,7 +3,6 @@
 
 module Main where
 
-import Data.Aeson
 import Data.Aeson qualified as Aeson
 import Data.Generics.Sum.Any (AsAny (_As))
 import Data.Map.Strict qualified as Map
@@ -12,16 +11,13 @@ import Ema.CLI qualified
 import Ema.Route.Generic
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
 import Generics.SOP qualified as SOP
+import NHI.Types (Pkg (..))
 import Optics.Core (Prism', (%))
 import Options.Applicative
 import Text.Blaze.Html.Renderer.Utf8 qualified as RU
 import Text.Blaze.Html5 ((!))
 import Text.Blaze.Html5 qualified as H
 import Text.Blaze.Html5.Attributes qualified as A
-
-data Pkg = Pkg {name :: Text, pname :: Text, version :: Text}
-  deriving stock (Eq, Show, Generic)
-  deriving anyclass (FromJSON)
 
 data Model = Model
   { modelBaseUrl :: Text
@@ -125,32 +121,37 @@ renderBody rp model r = do
   H.div ! A.class_ "container mx-auto mt-8 p-2" $ do
     renderNavbar rp r
     H.h1 ! A.class_ "text-3xl font-bold" $ H.toHtml $ routeTitle r
-    case r of
-      HtmlRoute_Index lr -> do
-        let pkgs' = case lr of
-              ListingRoute_All -> modelPackages model
-              ListingRoute_MultiVersion -> Map.filter (\xs -> length xs > 1) $ modelPackages model
-        H.div ! A.class_ "bg-red-200 p-2 m-2" $ do
-          H.header $ H.text "WARNING: This site is a WIP"
-        forM_ (Map.toList pkgs') $ \(k, vers) -> do
-          H.div $ do
-            H.header ! A.class_ "font-bold text-xl mt-2" $ H.toHtml k
-            forM_ vers $ \Pkg {..} -> do
-              H.li $ do
-                H.code (H.toHtml name) <> " (" <> H.toHtml version <> ")"
-      HtmlRoute_About -> do
-        "WIP: https://github.com/srid/NixHaskellIndex"
+    renderRoute model r
     H.a ! A.href (staticRouteUrl rp model "logo.svg") $ do
       H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
+
+renderRoute :: Model -> HtmlRoute -> H.Html
+renderRoute model = \case
+  HtmlRoute_Index lr -> do
+    let pkgs' = case lr of
+          ListingRoute_All -> modelPackages model
+          ListingRoute_MultiVersion -> Map.filter (\xs -> length xs > 1) $ modelPackages model
+    H.div ! A.class_ "bg-red-200 p-2 m-2" $ do
+      H.header $ H.text "WARNING: This site is a WIP"
+    forM_ (Map.toList pkgs') $ \(k, vers) -> do
+      H.div $ do
+        H.header ! A.class_ "font-bold text-xl mt-2" $ H.toHtml k
+        forM_ vers $ \Pkg {..} -> do
+          H.li $ do
+            H.code (H.toHtml name) <> " (" <> H.toHtml version <> ")"
+  HtmlRoute_About -> do
+    "WIP: https://github.com/srid/NixHaskellIndex"
 
 renderNavbar :: Prism' FilePath Route -> HtmlRoute -> H.Html
 renderNavbar rp currentRoute =
   H.nav ! A.class_ "w-full text-xl font-bold flex space-x-4  mb-4" $ do
     forM_ ((HtmlRoute_Index <$> universe @ListingRoute) <> [HtmlRoute_About]) $ \r ->
       let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
-       in H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+       in H.a
+            ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
             ! A.class_ ("rounded p-2 " <> extraClass)
-            $ H.toHtml $ routeTitle r
+            $ H.toHtml
+            $ routeTitle r
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
@@ -160,7 +161,8 @@ routeTitle r = case r of
 
 routeLink :: Prism' FilePath Route -> HtmlRoute -> H.Html -> H.Html
 routeLink rp r =
-  H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+  H.a
+    ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
     ! A.class_ "text-rose-400"
 
 -- | Link to a file under ./static
