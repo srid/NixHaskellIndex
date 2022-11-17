@@ -33,8 +33,6 @@ data ListingRoute
              ]
         )
 
-type PackageRoute = StringRoute [Pkg] Text
-
 data HtmlRoute
   = HtmlRoute_Index ListingRoute
   | HtmlRoute_Package Text
@@ -48,7 +46,7 @@ data HtmlRoute
             '[ WithModel (Map Text [Pkg])
              , WithSubRoutes
                 '[ ListingRoute
-                 , FolderRoute "p" PackageRoute
+                 , FolderRoute "p" (StringRoute [Pkg] Text)
                  , FileRoute "about.html"
                  ]
              ]
@@ -66,10 +64,6 @@ data Route
     via ( GenericRoute
             Route
             '[ WithModel Model
-             , WithSubModels
-                '[ Map Text [Pkg]
-                 , SR.Model
-                 ]
              , WithSubRoutes
                 '[ HtmlRoute
                  , StaticRoute

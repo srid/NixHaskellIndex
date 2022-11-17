@@ -23,7 +23,7 @@ renderRoute rp packages = \case
     forM_ (Map.toList pkgs') $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-2" $
-          H.a ! A.href (H.toValue $ Ema.routeUrl rp $ Route_Html $ HtmlRoute_Package k) $
+          H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_Package k) $
             H.toHtml k
         forM_ vers $ \Pkg {..} -> do
           H.li $ do
@@ -32,10 +32,13 @@ renderRoute rp packages = \case
     let vers = fromJust $ Map.lookup name packages
     H.div $ do
       H.header ! A.class_ "font-bold text-xl mt-2" $
-        H.a ! A.href (H.toValue $ Ema.routeUrl rp $ Route_Html $ HtmlRoute_Package name) $
+        H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_Package name) $
           H.toHtml name
       forM_ vers $ \Pkg {..} -> do
         H.li $ do
           H.code (H.toHtml name) <> " (" <> H.toHtml version <> ")"
   HtmlRoute_About -> do
     "WIP: https://github.com/srid/NixHaskellIndex"
+
+routeUrl :: forall {r}. Prism' FilePath r -> r -> Text
+routeUrl = Ema.routeUrlWith Ema.UrlPretty

@@ -4,7 +4,11 @@ module NHI.Site where
 
 import Data.Aeson qualified as Aeson
 import Data.Generics.Sum.Any (AsAny (_As))
-import Ema
+import Ema (
+  Asset (AssetGenerated),
+  EmaSite (SiteArg, siteInput, siteOutput),
+  Format (Html),
+ )
 import Ema.CLI qualified
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
 import NHI.Route
@@ -64,10 +68,10 @@ renderNavbar rp currentRoute =
     forM_ ((HtmlRoute_Index <$> universe @ListingRoute) <> [HtmlRoute_About]) $ \r ->
       let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
        in H.a
-            ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+            ! A.href (H.toValue $ View.routeUrl rp $ Route_Html r)
             ! A.class_ ("rounded p-2 " <> extraClass)
-            $ H.toHtml $
-              routeTitle r
+            $ H.toHtml
+            $ routeTitle r
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
@@ -79,7 +83,7 @@ routeTitle r = case r of
 routeLink :: Prism' FilePath Route -> HtmlRoute -> H.Html -> H.Html
 routeLink rp r =
   H.a
-    ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+    ! A.href (H.toValue $ View.routeUrl rp $ Route_Html r)
     ! A.class_ "text-rose-400"
 
 -- | Link to a file under ./static
