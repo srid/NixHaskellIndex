@@ -41,6 +41,7 @@ executable NixHaskellIndex
     , optparse-applicative
     , relude                >=1.0
     , text
+    , th-env
     , time
     , unionmount            >=0.2
     , unliftio

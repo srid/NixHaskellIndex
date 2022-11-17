@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module NHI.Site where
@@ -11,11 +12,11 @@ import Ema (
  )
 import Ema.CLI qualified
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
+import Language.Haskell.TH.Env (envQ')
 import NHI.Route
 import NHI.View qualified as View
 import Optics.Core (Prism', (%))
 import Options.Applicative
-import System.Environment (getEnv)
 import Text.Blaze.Html.Renderer.Utf8 qualified as RU
 import Text.Blaze.Html5 ((!))
 import Text.Blaze.Html5 qualified as H
@@ -25,7 +26,7 @@ instance EmaSite Route where
   type SiteArg Route = CliArgs
   siteInput cliAct args = do
     staticRouteDyn <- siteInput @StaticRoute cliAct ()
-    liftIO (Aeson.eitherDecodeFileStrict' =<< getEnv "DATAFILE") >>= \case
+    liftIO (Aeson.eitherDecodeFileStrict' $$(envQ' "DATAFILE")) >>= \case
       Left err -> error $ toText err
       Right pkgs ->
         pure $ Model (cliArgsBaseUrl args) <$> staticRouteDyn <*> pure pkgs
