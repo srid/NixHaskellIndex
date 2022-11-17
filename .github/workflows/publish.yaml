@@ -15,8 +15,9 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
             trusted-public-keys = cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
             substituters = https://cache.garnix.io https://cache.nixos.org/
-      - name: Build sources 🔧
+      - name: Cache deps and build sources 🔧
         run: |
+          nix run .#tailwind -- --help
           nix build -j 4
           nix build -j 4 .#data -o data
       - name: Generate HTML 🔧
