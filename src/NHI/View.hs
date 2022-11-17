@@ -19,6 +19,8 @@ renderRoute rp packages = \case
           ListingRoute_All -> packages
           ListingRoute_MultiVersion ->
             Map.filter (\xs -> length xs > 1) packages
+          ListingRoute_Broken ->
+            Map.filter (any (\Pkg {..} -> broken)) packages
     forM_ (Map.toList pkgs') $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-4 hover:underline" $
@@ -49,6 +51,9 @@ renderVersions k vers =
         when (length vers > 1 && k == name) $ do
           H.span ! A.class_ "bg-green-200 px-0.5 font-bold small rounded" $ do
             "default"
+        when broken $ do
+          H.span ! A.class_ "bg-red-200 px-0.5 font-bold small rounded" $ do
+            "broken"
 
 routeUrl :: forall {r}. Prism' FilePath r -> r -> Text
 routeUrl = Ema.routeUrlWith Ema.UrlPretty

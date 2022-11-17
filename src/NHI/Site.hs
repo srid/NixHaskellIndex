@@ -77,6 +77,7 @@ routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
   HtmlRoute_Index ListingRoute_All -> "All packages"
   HtmlRoute_Index ListingRoute_MultiVersion -> "Packages with more than one version"
+  HtmlRoute_Index ListingRoute_Broken -> "Packages with broken versions"
   HtmlRoute_Package pname -> pname
   HtmlRoute_About -> "About"
 

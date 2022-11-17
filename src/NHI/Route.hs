@@ -19,6 +19,7 @@ data Model = Model
 data ListingRoute
   = ListingRoute_MultiVersion
   | ListingRoute_All
+  | ListingRoute_Broken
   deriving stock (Show, Eq, Ord, Generic, Enum, Bounded)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
   deriving
@@ -29,6 +30,7 @@ data ListingRoute
              , WithSubRoutes
                 '[ FileRoute "index.html"
                  , FileRoute "all.html"
+                 , FileRoute "broken.html"
                  ]
              ]
         )
