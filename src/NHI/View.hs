@@ -31,10 +31,10 @@ renderRoute rp NixData {..} = \case
     let vers = fromJust $ Map.lookup name haskellPackages
     H.div ! A.class_ "mt-4" $ do
       renderVersions name vers
-    H.div ! A.class_ "mt-8" $ do
+    H.div ! A.class_ "mt-8 prose" $ do
+      H.h2 "Inspect in `nix repl`"
       H.pre ! A.class_ "bg-gray-700 text-white p-2 my-2 rounded" $ do
         H.code $ do
-          H.toHtml @Text "$ # You may inspect the packages above in nix repl\n"
           H.toHtml @Text $ "$ nix repl github:NixOS/nixpkgs/" <> nixpkgsRev <> "\n"
           H.toHtml @Text $ "nix-repl> pkgs = legacyPackages.${builtins.currentSystem}\n"
           H.toHtml @Text $ "nix-repl> pkgs.haskellPackages." <> name <> "  # Hit <tab> here to autocomplete versions\n"
