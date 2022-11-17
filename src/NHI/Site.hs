@@ -61,8 +61,9 @@ renderBody rp model r = do
       H.header $ H.text "WARNING: This site is a WIP"
     H.h1 ! A.class_ "text-3xl font-bold" $ H.toHtml $ routeTitle r
     View.renderRoute rp (modelPackages model) r
-    H.a ! A.href (staticRouteUrl rp model "logo.svg") $ do
-      H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
+
+-- H.a ! A.href (staticRouteUrl rp model "logo.svg") $ do
+--  H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
 
 renderNavbar :: Prism' FilePath Route -> HtmlRoute -> H.Html
 renderNavbar rp currentRoute =
