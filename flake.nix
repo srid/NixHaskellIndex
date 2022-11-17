@@ -48,13 +48,8 @@
         packages.data = pkgs.writeTextFile {
           name = "data";
           text =
-            let
-              data = builtins.groupBy (x: x.pname)
-                (lib.mapAttrsToList (n: v: { name = n; inherit (v) pname version; })
-                  (lib.filterAttrs (n: v: builtins.typeOf v == "set" && lib.hasAttr "pname" v)
-                    pkgs.haskellPackages));
-            in
-            builtins.toJSON data;
+            let data = import ./src/NHI/data.nix { inherit pkgs lib; };
+            in builtins.toJSON data;
         };
         packages.default = config.packages.project-NixHaskellIndex;
         devShells.default = config.devShells.project;
