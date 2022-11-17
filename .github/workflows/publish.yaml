@@ -24,9 +24,10 @@ jobs:
           mkdir ./output
           export TARGET=$(pwd)/output
           nix run .#tailwind -- -o static/tailwind.css 'src/**/*.hs' 
-          ./result/bin/NixHaskellIndex --base-url=/NixHaskellIndex/ gen $TARGET
+          ./result/bin/NixHaskellIndex gen $TARGET
       - name: Deploy to gh-pages 🚀
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: output
+          cname: nixpkgs.haskell.page
