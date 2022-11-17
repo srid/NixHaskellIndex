@@ -19,7 +19,6 @@ jobs:
         run: |
           nix run .#tailwind -- --help
           nix build -j 4
-          nix build -j 4 .#data -o data
       - name: Generate HTML 🔧
         run: |
           mkdir ./output
