@@ -64,6 +64,8 @@ renderBody rp model r@(HtmlRoute_GHC (ghcVer, _)) = do
     H.h1 ! A.class_ (View.bodyBg <> " text-3xl font-bold text-white py-2 px-4") $ H.toHtml $ View.routeTitle r
     H.div ! A.class_ "px-4 py-4" $ do
       View.renderRoute rp (modelData model) r
+  H.div ! A.class_ "px-4 my-4 flex items-center justify-center text-gray-50" $ do
+    H.a ! A.href "https://ema.srid.ca" $ "Powered by Ema"
 
 -- H.a ! A.href (staticRouteUrl rp model "logo.svg") $ do
 --  H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"

@@ -68,7 +68,7 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
         renderPagination total page $ \p ->
           H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_Broken $ fromPage p)
       _ ->
-        "NOn paginagted"
+        mempty
     forM_ pkgsPage $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-4 hover:underline" $
@@ -90,11 +90,11 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
 
 renderPagination :: Int -> Int -> (Page -> H.AttributeValue) -> H.Html
 renderPagination total page pageUrl =
-  H.div ! A.class_ "flex flex-row text-xs space-x-1" $ do
+  H.div ! A.class_ "flex flex-row text-sm space-x-1 text-blue-500" $ do
     forM_ [1 .. total] $ \i -> do
       if i == page
         then H.b $ H.toHtml @Text $ show i
-        else H.a ! A.class_ "underline" ! A.href (pageUrl $ Page i) $ H.toHtml @Text $ show i
+        else H.a ! A.class_ "hover:underline opacity-50 hover:opacity-100" ! A.href (pageUrl $ Page i) $ H.toHtml @Text $ show i
 
 renderVersions :: Text -> NonEmpty Pkg -> H.Html
 renderVersions k vers =
