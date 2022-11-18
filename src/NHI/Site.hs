@@ -14,7 +14,6 @@ import Ema.CLI qualified
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
 import Language.Haskell.TH.Env (envQ')
 import NHI.Route
-import NHI.Types
 import NHI.View qualified as View
 import Optics.Core (Prism', (%))
 import Options.Applicative
@@ -51,39 +50,19 @@ renderHead :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
 renderHead rp model r = do
   H.meta ! A.charset "UTF-8"
   H.meta ! A.name "viewport" ! A.content "width=device-width, initial-scale=1"
-  H.title $ H.toHtml $ routeTitle r <> " - Nix Haskell Index"
+  H.title $ H.toHtml $ View.routeTitle r <> " - Nix Haskell Index"
   H.base ! A.href (H.toValue $ modelBaseUrl model)
   H.link ! A.rel "stylesheet" ! A.href (staticRouteUrl rp model "tailwind.css")
 
 renderBody :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
 renderBody rp model r = do
   H.div ! A.class_ "container mx-auto mt-8 p-2" $ do
-    renderNavbar rp model r
-    H.h1 ! A.class_ "text-3xl font-bold" $ H.toHtml $ routeTitle r
+    View.renderNavbar rp model r
+    H.h1 ! A.class_ "text-3xl font-bold" $ H.toHtml $ View.routeTitle r
     View.renderRoute rp (modelData model) r
 
 -- H.a ! A.href (staticRouteUrl rp model "logo.svg") $ do
 --  H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
-
-renderNavbar :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
-renderNavbar rp _model currentRoute =
-  H.nav ! A.class_ "w-full text-xl font-bold flex space-x-4  mb-4" $ do
-    let routes = fmap (HtmlRoute_Index . GhcRoute_Index) (universe @ListingRoute) <> [HtmlRoute_About]
-    forM_ routes $ \r ->
-      let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
-       in H.a
-            ! A.href (H.toValue $ View.routeUrl rp $ Route_Html r)
-            ! A.class_ ("rounded p-2 " <> extraClass)
-            $ H.toHtml (routeTitle r)
-
-routeTitle :: HtmlRoute -> Text
-routeTitle r = case r of
-  HtmlRoute_Index (GhcRoute_Index ListingRoute_All) -> "All packages"
-  HtmlRoute_Index (GhcRoute_Index ListingRoute_MultiVersion) -> "Packages with more than one version"
-  HtmlRoute_Index (GhcRoute_Index ListingRoute_Broken) -> "Packages with broken versions"
-  HtmlRoute_Index (GhcRoute_Package pname) -> pname
-  HtmlRoute_GHC _ -> "TODO"
-  HtmlRoute_About -> "About"
 
 routeLink :: Prism' FilePath Route -> HtmlRoute -> H.Html -> H.Html
 routeLink rp r =

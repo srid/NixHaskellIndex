@@ -79,5 +79,25 @@ renderVersions k vers =
           H.span ! A.class_ "bg-red-200 px-0.5 font-bold small rounded" $ do
             "broken"
 
+renderNavbar :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
+renderNavbar rp _model currentRoute =
+  H.nav ! A.class_ "w-full text-xl font-bold flex space-x-4  mb-4" $ do
+    let routes = fmap (HtmlRoute_Index . GhcRoute_Index) (universe @ListingRoute) <> [HtmlRoute_About]
+    forM_ routes $ \r ->
+      let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
+       in H.a
+            ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+            ! A.class_ ("rounded p-2 " <> extraClass)
+            $ H.toHtml (routeTitle r)
+
+routeTitle :: HtmlRoute -> Text
+routeTitle r = case r of
+  HtmlRoute_Index (GhcRoute_Index ListingRoute_All) -> "All packages"
+  HtmlRoute_Index (GhcRoute_Index ListingRoute_MultiVersion) -> "Packages with more than one version"
+  HtmlRoute_Index (GhcRoute_Index ListingRoute_Broken) -> "Packages with broken versions"
+  HtmlRoute_Index (GhcRoute_Package pname) -> pname
+  HtmlRoute_GHC _ -> "TODO"
+  HtmlRoute_About -> "About"
+
 routeUrl :: forall {r}. Prism' FilePath r -> r -> Text
 routeUrl = Ema.routeUrlWith Ema.UrlPretty

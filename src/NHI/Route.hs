@@ -60,7 +60,8 @@ instance (IsRoute r, IsString k, ToString k, Ord k, Show r) => IsRoute (MapRoute
             let (base, (\s -> fromMaybe s $ T.stripPrefix "/" s) -> rest) = T.breakOn "/" (toText fp)
                 k = fromString $ toString base
             m <- Map.lookup k rs
-            MapRoute . (k,) <$> preview (fromPrism_ $ routePrism @r m) (toString rest)
+            r <- preview (fromPrism_ $ routePrism @r m) (toString rest)
+            pure $ MapRoute (k, r)
         )
     where
       mapMemberPrism m =
