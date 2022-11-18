@@ -14,6 +14,7 @@ data Pkg = Pkg
 data NixData = NixData
   { nixpkgsRev :: Text
   , haskellPackages :: Map Text (NonEmpty Pkg)
+  , packages :: Map Text (Map Text (NonEmpty Pkg))
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (FromJSON)
