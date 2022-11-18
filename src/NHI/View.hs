@@ -16,13 +16,12 @@ import Text.Blaze.Html5.Attributes qualified as A
 renderRoute :: Prism' FilePath Route -> NixData -> HtmlRoute -> H.Html
 renderRoute rp NixData {..} = \case
   HtmlRoute_GHC (ghcVer, ghcRoute) -> do
-    renderAbout nixpkgsRev ghcVer
     let pkgs = fromJust $ Map.lookup ghcVer packages
     renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute)
 
 renderAbout :: Text -> Text -> H.Html
 renderAbout nixpkgsRev ghcVer = do
-  H.div ! A.class_ "text-xs bg-purple-50 border-2 border-gray-200 rounded shadow px-2 pb-2" $ do
+  H.div ! A.class_ (bodyBg <> " text-gray-100 opacity-20 hover:opacity-100 text-xs border-2 border-gray-200 rounded shadow px-2 pb-2 mb-2") ! A.title "About this site" $ do
     H.p ! A.class_ "mt-2" $ do
       "Did you know that Haskell libraries on nixpkgs may have more than one version defined? And that the default or available versions do not necessarily correspond to that of Stackage LTS?"
     H.p ! A.class_ "mt-2" $ do
@@ -50,7 +49,9 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
             Map.filter (\xs -> length xs > 1) pkgs
           ListingRoute_Broken ->
             Map.filter (any (\Pkg {..} -> pname == name && broken)) pkgs
-    H.b $ H.toHtml @Text $ show numHere <> " / " <> show numTotal <> " packages"
+    H.div ! A.class_ "my-2 italic" $ do
+      "Show "
+      H.toHtml @Text $ show numHere <> " / " <> show numTotal <> " packages"
     forM_ (Map.toList pkgs') $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-4 hover:underline" $
@@ -89,33 +90,36 @@ renderVersions k vers =
           H.span ! A.class_ "bg-red-200 px-0.5 font-bold small rounded" $ do
             "broken"
 
+bodyBg = "bg-gray-700"
+
 renderNavbar :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
 renderNavbar rp Model {..} (HtmlRoute_GHC (k0, subRoute0)) =
-  H.div ! A.class_ "w-full flex items-center justify-center" $ do
-    H.nav ! A.class_ "text-xs bg-blue-50 rounded-t font-bold flex flex-col items-center justify-center  mb-4" $ do
-      let navRoutes :: [Text] = Map.keys (packages modelData)
-      H.div ! A.class_ "flex flex-row space-x-4 " $ do
-        forM_ navRoutes $ \k ->
-          let extraClass = if k == k0 then "bg-rose-400 text-white" else "text-gray-700"
-              r = HtmlRoute_GHC (k, GhcRoute_Index ListingRoute_MultiVersion)
-           in H.a
-                ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
-                ! A.class_ ("p-2 " <> extraClass)
-                $ H.toHtml (if k == "" then "default" else k)
-      let navSubRoutes :: [ListingRoute] = universe
-      H.div ! A.class_ "flex flex-row space-x-4 " $ do
-        forM_ navSubRoutes $ \lR ->
-          let extraClass = if GhcRoute_Index lR == subRoute0 then "bg-rose-400 text-white" else "text-gray-700"
-              r = HtmlRoute_GHC (k0, GhcRoute_Index lR)
-           in H.a
-                ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
-                ! A.class_ ("p-2 " <> extraClass)
-                $ H.toHtml (routeTitle r)
+  H.div ! A.class_ bodyBg $
+    H.div ! A.class_ "w-full flex bg-pink-200 rounded-t-xl shadow-t items-center justify-center" $ do
+      H.nav ! A.class_ "text-xs rounded-t font-bold flex flex-col items-center justify-center" $ do
+        let navRoutes :: [Text] = Map.keys (packages modelData)
+        H.div ! A.class_ "flex flex-row space-x-4 mb-1" $ do
+          forM_ navRoutes $ \k ->
+            let extraClass = if k == k0 then "bg-rose-400 text-white" else "text-gray-700"
+                r = HtmlRoute_GHC (k, GhcRoute_Index ListingRoute_MultiVersion)
+             in H.a
+                  ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+                  ! A.class_ ("p-2 " <> extraClass)
+                  $ H.toHtml (if k == "" then "default" else k)
+        let navSubRoutes :: [ListingRoute] = universe
+        H.div ! A.class_ "flex flex-row space-x-4" $ do
+          forM_ navSubRoutes $ \lR ->
+            let extraClass = if GhcRoute_Index lR == subRoute0 then "bg-rose-400 text-white" else "text-gray-700"
+                r = HtmlRoute_GHC (k0, GhcRoute_Index lR)
+             in H.a
+                  ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+                  ! A.class_ ("p-2 " <> extraClass)
+                  $ H.toHtml (routeTitle r)
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
   HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_All) -> "All packages"
-  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_MultiVersion) -> "Packages with more than one version"
+  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_MultiVersion) -> "Multi-version packages"
   HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_Broken) -> "Broken packages"
   HtmlRoute_GHC (ver, GhcRoute_Package pname) -> pname
 

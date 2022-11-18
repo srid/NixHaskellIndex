@@ -14,6 +14,7 @@ import Ema.CLI qualified
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
 import Language.Haskell.TH.Env (envQ')
 import NHI.Route
+import NHI.Types (NixData (..))
 import NHI.View qualified as View
 import Optics.Core (Prism', (%))
 import Options.Applicative
@@ -43,7 +44,7 @@ renderHtmlRoute rp m r = do
     H.html ! A.lang "en" $ do
       H.head $ do
         renderHead rp m r
-      H.body ! A.class_ "overflow-y-scroll" $ do
+      H.body ! A.class_ ("overflow-y-scroll " <> View.bodyBg) $ do
         renderBody rp m r
 
 renderHead :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
@@ -55,11 +56,14 @@ renderHead rp model r = do
   H.link ! A.rel "stylesheet" ! A.href (staticRouteUrl rp model "tailwind.css")
 
 renderBody :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
-renderBody rp model r = do
-  H.div ! A.class_ "container mx-auto mt-8 p-2" $ do
+renderBody rp model r@(HtmlRoute_GHC (ghcVer, _)) = do
+  H.div ! A.class_ "container mx-auto max-w-prose bg-white rounded shadow my-8" $ do
     View.renderNavbar rp model r
-    H.h1 ! A.class_ "text-3xl font-bold" $ H.toHtml $ View.routeTitle r
-    View.renderRoute rp (modelData model) r
+    H.div ! A.class_ "px-4 py-4" $ do
+      View.renderAbout (nixpkgsRev $ modelData model) ghcVer
+    H.h1 ! A.class_ (View.bodyBg <> " text-3xl font-bold text-white py-2 px-4") $ H.toHtml $ View.routeTitle r
+    H.div ! A.class_ "px-4 py-4" $ do
+      View.renderRoute rp (modelData model) r
 
 -- H.a ! A.href (staticRouteUrl rp model "logo.svg") $ do
 --  H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
