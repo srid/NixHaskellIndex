@@ -63,12 +63,15 @@ instance (IsRoute r, IsString k, ToString k, Ord k, Show r) => IsRoute (MapRoute
              in prefix <> review (fromPrism_ $ routePrism @r m) r
         )
         ( \fp -> do
-            let (base, rest) =
+            let candidates =
                   case breakPath fp of
-                    (a, Nothing) -> ("", a)
-                    (a, Just b) -> (a, b)
-                k = fromString $ toString base
-            m <- Map.lookup k rs
+                    (a, Nothing) -> [("", a)]
+                    (a, Just b) -> [(a, b), ("", fp)]
+            (m, k, rest) <-
+              asum $
+                candidates <&> \(base, rest) ->
+                  let k = fromString base
+                   in (,k,rest) <$> Map.lookup k rs
             r <- preview (fromPrism_ $ routePrism @r m) (toString rest)
             pure $ MapRoute (k, r)
         )
