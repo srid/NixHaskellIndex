@@ -36,7 +36,7 @@ renderAbout nixpkgsRev ghcVer = do
       " as evaluated on x86_64-linux."
     H.p ! A.class_ "mt-2" $ do
       "You are viewing GHC version: "
-      show ghcVer
+      H.toHtml $ if ghcVer == "" then "default (pkgs.haskellPackages)" else ghcVer
 
 renderGhcRoute :: Prism' FilePath Route -> Map Text (NonEmpty Pkg) -> Text -> (Text, GhcRoute) -> H.Html
 renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
@@ -85,26 +85,34 @@ renderVersions k vers =
             "broken"
 
 renderNavbar :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
-renderNavbar rp Model {..} currentRoute =
-  H.nav ! A.class_ "w-full text-xl font-bold flex space-x-4  mb-4" $ do
-    let ks = Map.keys $ packages modelData
-        routes :: [HtmlRoute] = do
-          k <- ks
-          r <- fmap GhcRoute_Index $ universe @ListingRoute
-          pure $ HtmlRoute_GHC (k, r)
-    forM_ routes $ \r ->
-      let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
-       in H.a
-            ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
-            ! A.class_ ("rounded p-2 " <> extraClass)
-            $ H.toHtml (routeTitle r)
+renderNavbar rp Model {..} (HtmlRoute_GHC (k0, subRoute0)) =
+  H.div ! A.class_ "w-full flex items-center justify-center" $ do
+    H.nav ! A.class_ "text-xs bg-blue-50 rounded-t font-bold flex flex-col items-center justify-center  mb-4" $ do
+      let navRoutes :: [Text] = Map.keys (packages modelData)
+      H.div ! A.class_ "flex flex-row space-x-4 " $ do
+        forM_ navRoutes $ \k ->
+          let extraClass = if k == k0 then "bg-rose-400 text-white" else "text-gray-700"
+              r = HtmlRoute_GHC (k, GhcRoute_Index ListingRoute_MultiVersion)
+           in H.a
+                ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+                ! A.class_ ("p-2 " <> extraClass)
+                $ H.toHtml (if k == "" then "default" else k)
+      let navSubRoutes :: [ListingRoute] = universe
+      H.div ! A.class_ "flex flex-row space-x-4 " $ do
+        forM_ navSubRoutes $ \lR ->
+          let extraClass = if GhcRoute_Index lR == subRoute0 then "bg-rose-400 text-white" else "text-gray-700"
+              r = HtmlRoute_GHC (k0, GhcRoute_Index lR)
+           in H.a
+                ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+                ! A.class_ ("p-2 " <> extraClass)
+                $ H.toHtml (routeTitle r)
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
-  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_All) -> ver <> ":" <> "All packages"
-  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_MultiVersion) -> ver <> ":" <> "Packages with more than one version"
-  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_Broken) -> ver <> ":" <> "Packages with broken versions"
-  HtmlRoute_GHC (ver, GhcRoute_Package pname) -> ver <> ":" <> pname
+  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_All) -> "All packages"
+  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_MultiVersion) -> "Packages with more than one version"
+  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_Broken) -> "Packages with broken versions"
+  HtmlRoute_GHC (ver, GhcRoute_Package pname) -> pname
 
 routeUrl :: forall {r}. Prism' FilePath r -> r -> Text
 routeUrl = Ema.routeUrlWith Ema.UrlPretty
