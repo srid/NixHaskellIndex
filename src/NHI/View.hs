@@ -48,7 +48,7 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
           ListingRoute_MultiVersion ->
             Map.filter (\xs -> length xs > 1) pkgs
           ListingRoute_Broken ->
-            Map.filter (any (\Pkg {..} -> broken)) pkgs
+            Map.filter (any (\Pkg {..} -> pname == name && broken)) pkgs
     H.b $ H.toHtml @Text $ show numHere <> " / " <> show numTotal <> " packages"
     forM_ (Map.toList pkgs') $ \(k, vers) -> do
       H.div $ do
@@ -111,7 +111,7 @@ routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
   HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_All) -> "All packages"
   HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_MultiVersion) -> "Packages with more than one version"
-  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_Broken) -> "Packages with broken versions"
+  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_Broken) -> "Broken packages"
   HtmlRoute_GHC (ver, GhcRoute_Package pname) -> pname
 
 routeUrl :: forall {r}. Prism' FilePath r -> r -> Text
