@@ -50,7 +50,7 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
           ListingRoute_Broken ->
             Map.filter (any (\Pkg {..} -> pname == name && broken)) pkgs
     H.div ! A.class_ "my-2 italic" $ do
-      "Show "
+      "Displaying "
       H.toHtml @Text $ show numHere <> " / " <> show numTotal <> " packages"
     forM_ (Map.toList pkgs') $ \(k, vers) -> do
       H.div $ do
