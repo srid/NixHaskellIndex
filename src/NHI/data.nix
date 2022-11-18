@@ -20,7 +20,7 @@ in
       #  lib.attrValues (lib.filterAttrs (_: set: lib.hasAttr "ghc" set) pkgs.haskell.packages)
       #  ++ [ pkgs.haskellPackages ];
       ghcPkgSets = {
-        default = pkgs.haskellPackages;
+        "" = pkgs.haskellPackages;
         "9.4.3" = pkgs.haskell.packages.ghc943;
         "9.2.5" = pkgs.haskell.packages.ghc925;
       };

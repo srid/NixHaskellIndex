@@ -42,6 +42,11 @@ data ListingRoute
         )
 
 -- TODO: upstream; https://github.com/EmaApps/ema/issues/144
+
+{- | Like `FolderRoute` but using dynamic folder name, looked up on a `Map`.
+
+  Empty folder name (map keys) are supported. They would translate in effect to the looked up route (no folder created).
+-}
 newtype MapRoute k r = MapRoute (k, r)
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
@@ -54,18 +59,26 @@ instance (IsRoute r, IsString k, ToString k, Ord k, Show r) => IsRoute (MapRoute
       prism'
         ( \(MapRoute (k, r)) ->
             let m = fromJust $ Map.lookup k rs -- HACK: fromJust
-             in toString k <> "/" <> review (fromPrism_ $ routePrism @r m) r
+                prefix = if toString k == "" then "" else toString k <> "/"
+             in prefix <> review (fromPrism_ $ routePrism @r m) r
         )
         ( \fp -> do
-            let (base, (\s -> fromMaybe s $ T.stripPrefix "/" s) -> rest) = T.breakOn "/" (toText fp)
+            let (base, rest) =
+                  case breakPath fp of
+                    (a, Nothing) -> ("", a)
+                    (a, Just b) -> (a, b)
                 k = fromString $ toString base
             m <- Map.lookup k rs
             r <- preview (fromPrism_ $ routePrism @r m) (toString rest)
             pure $ MapRoute (k, r)
         )
     where
-      mapMemberPrism m =
-        prism' id $ \r -> r <$ guard (r `Map.member` m)
+      -- Breaks a path once on the first slash.
+      breakPath (s :: String) =
+        case T.breakOn "/" (toText s) of
+          (p, "") -> (toString p, Nothing)
+          (p, toString -> '/' : rest) -> (toString p, Just rest)
+          _ -> error "T.breakOn: impossible"
 
   routeUniverse rs = concatMap (\(a, m) -> MapRoute . (a,) <$> routeUniverse m) $ Map.toList rs
 
@@ -87,9 +100,7 @@ data GhcRoute
         )
 
 data HtmlRoute
-  = HtmlRoute_Index GhcRoute
-  | HtmlRoute_GHC (Text, GhcRoute)
-  | HtmlRoute_About
+  = HtmlRoute_GHC (Text, GhcRoute)
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
   deriving
@@ -98,10 +109,7 @@ data HtmlRoute
             HtmlRoute
             '[ WithModel NixData
              , WithSubRoutes
-                '[ GhcRoute
-                 , MapRoute Text GhcRoute
-                 , -- , FolderRoute "p" (StringRoute (NonEmpty Pkg) Text)
-                   FileRoute "about.html"
+                '[ MapRoute Text GhcRoute
                  ]
              ]
         )

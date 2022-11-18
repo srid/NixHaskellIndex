@@ -14,13 +14,14 @@ import Text.Blaze.Html5.Attributes qualified as A
 
 renderRoute :: Prism' FilePath Route -> NixData -> HtmlRoute -> H.Html
 renderRoute rp NixData {..} = \case
-  HtmlRoute_Index ghcRoute ->
-    renderGhcRoute rp haskellPackages nixpkgsRev ghcRoute
   HtmlRoute_GHC (ghcVer, ghcRoute) -> do
-    H.header $ show ghcVer
+    renderAbout nixpkgsRev ghcVer
     let pkgs = fromJust $ Map.lookup ghcVer packages
-    renderGhcRoute rp pkgs nixpkgsRev ghcRoute
-  HtmlRoute_About -> do
+    renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute)
+
+renderAbout :: Text -> Text -> H.Html
+renderAbout nixpkgsRev ghcVer = do
+  H.div ! A.class_ "text-xs bg-purple-50 border-2 border-gray-200 rounded shadow px-2 pb-2" $ do
     H.p ! A.class_ "mt-2" $ do
       "Did you know that Haskell libraries on nixpkgs may have more than one version defined? And that the default or available versions do not necessarily correspond to that of Stackage LTS?"
     H.p ! A.class_ "mt-2" $ do
@@ -29,12 +30,16 @@ renderRoute rp NixData {..} = \case
       H.a ! A.class_ "underline" ! A.href "https://github.com/srid/NixHaskellIndex" $ "here"
       "."
     H.p ! A.class_ "mt-2" $ do
-      "The data on this site is based on "
+      "All data on this site is based on "
       let url = "https://github.com/NixOS/nixpkgs/tree/" <> nixpkgsRev
       H.a ! A.class_ "underline" ! A.href (H.toValue url) $ H.toHtml $ "github:NixOS/nixpkgs/" <> nixpkgsRev
       " as evaluated on x86_64-linux."
+    H.p ! A.class_ "mt-2" $ do
+      "You are viewing GHC version: "
+      show ghcVer
 
-renderGhcRoute rp pkgs nixpkgsRev = \case
+renderGhcRoute :: Prism' FilePath Route -> Map Text (NonEmpty Pkg) -> Text -> (Text, GhcRoute) -> H.Html
+renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
   GhcRoute_Index lr -> do
     let numTotal = length pkgs
         numHere = length pkgs'
@@ -48,7 +53,7 @@ renderGhcRoute rp pkgs nixpkgsRev = \case
     forM_ (Map.toList pkgs') $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-4 hover:underline" $
-          H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_Index $ GhcRoute_Package k) $
+          H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Package k)) $
             H.toHtml k
         renderVersions k vers
   GhcRoute_Package name -> do
@@ -80,9 +85,13 @@ renderVersions k vers =
             "broken"
 
 renderNavbar :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
-renderNavbar rp _model currentRoute =
+renderNavbar rp Model {..} currentRoute =
   H.nav ! A.class_ "w-full text-xl font-bold flex space-x-4  mb-4" $ do
-    let routes = fmap (HtmlRoute_Index . GhcRoute_Index) (universe @ListingRoute) <> [HtmlRoute_About]
+    let ks = Map.keys $ packages modelData
+        routes :: [HtmlRoute] = do
+          k <- ks
+          r <- fmap GhcRoute_Index $ universe @ListingRoute
+          pure $ HtmlRoute_GHC (k, r)
     forM_ routes $ \r ->
       let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
        in H.a
@@ -92,12 +101,10 @@ renderNavbar rp _model currentRoute =
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
-  HtmlRoute_Index (GhcRoute_Index ListingRoute_All) -> "All packages"
-  HtmlRoute_Index (GhcRoute_Index ListingRoute_MultiVersion) -> "Packages with more than one version"
-  HtmlRoute_Index (GhcRoute_Index ListingRoute_Broken) -> "Packages with broken versions"
-  HtmlRoute_Index (GhcRoute_Package pname) -> pname
-  HtmlRoute_GHC _ -> "TODO"
-  HtmlRoute_About -> "About"
+  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_All) -> ver <> ":" <> "All packages"
+  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_MultiVersion) -> ver <> ":" <> "Packages with more than one version"
+  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_Broken) -> ver <> ":" <> "Packages with broken versions"
+  HtmlRoute_GHC (ver, GhcRoute_Package pname) -> ver <> ":" <> pname
 
 routeUrl :: forall {r}. Prism' FilePath r -> r -> Text
 routeUrl = Ema.routeUrlWith Ema.UrlPretty
