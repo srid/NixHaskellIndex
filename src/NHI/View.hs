@@ -61,7 +61,7 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
           forM_ [1 .. total] $ \i -> do
             if i == page
               then H.b $ H.toHtml @Text $ show i
-              else H.a ! A.class_ "underline" ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_All $ PaginatedRoute_OnPage $ Page i)) $ H.toHtml @Text $ show i
+              else H.a ! A.class_ "underline" ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_All $ fromPage $ Page i)) $ H.toHtml @Text $ show i
         _ ->
           "NOn paginagted"
     forM_ pkgs' $ \(k, vers) -> do

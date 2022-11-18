@@ -13,7 +13,6 @@ import Ema.Route.Generic
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
 import Ema.Route.Lib.Extra.StringRoute (StringRoute (StringRoute))
 import Ema.Route.Prism (Prism_)
-import Generics.SOP (I (I), NP (Nil, (:*)))
 import Generics.SOP qualified as SOP
 import NHI.Types (NixData, Pkg (..))
 import Optics.Core
@@ -51,6 +50,11 @@ getPage :: forall {t}. PaginatedRoute t -> Page
 getPage = \case
   PaginatedRoute_Main -> Page 1
   PaginatedRoute_OnPage p -> p
+
+fromPage :: forall {t}. Page -> PaginatedRoute t
+fromPage = \case
+  Page 1 -> PaginatedRoute_Main
+  p -> PaginatedRoute_OnPage p
 
 instance Paged a => IsRoute (PaginatedRoute a) where
   type RouteModel (PaginatedRoute a) = [a]
