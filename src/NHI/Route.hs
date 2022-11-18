@@ -5,12 +5,15 @@ module NHI.Route where
 
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
+import Data.Sequence (chunksOf)
+import Data.Sequence qualified as Seq
 import Data.Text qualified as T
 import Ema
 import Ema.Route.Generic
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
 import Ema.Route.Lib.Extra.StringRoute (StringRoute (StringRoute))
 import Ema.Route.Prism (Prism_)
+import Generics.SOP (I (I), NP (Nil, (:*)))
 import Generics.SOP qualified as SOP
 import NHI.Types (NixData, Pkg (..))
 import Optics.Core
@@ -22,21 +25,124 @@ data Model = Model
   }
   deriving stock (Eq, Show, Generic)
 
+newtype Page = Page {unPage :: Int}
+  deriving newtype (Show, Eq, Ord)
+
+instance IsString Page where
+  fromString = Page . fromJust . readMaybe
+
+instance ToString Page where
+  toString = show . unPage
+
+class Paged a where
+  pageSize :: Proxy a -> Int
+  pageSize Proxy = 500
+  pages :: [a] -> [[a]]
+  pages xs = fmap toList . toList $ chunksOf (pageSize @a Proxy) (Seq.fromList xs)
+
+instance Paged (NonEmpty a)
+instance Paged (Text, NonEmpty a)
+
+data PaginatedRoute (t :: Type) = PaginatedRoute_Main | PaginatedRoute_OnPage Page
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
+
+getPage :: forall {t}. PaginatedRoute t -> Page
+getPage = \case
+  PaginatedRoute_Main -> Page 1
+  PaginatedRoute_OnPage p -> p
+
+instance Paged a => IsRoute (PaginatedRoute a) where
+  type RouteModel (PaginatedRoute a) = [a]
+  routePrism m =
+    toPrism_ $
+      prism'
+        ( \case
+            PaginatedRoute_Main -> "index.html"
+            PaginatedRoute_OnPage page -> "page/" <> toString page
+        )
+        ( \fp -> do
+            if fp == "index.html"
+              then pure PaginatedRoute_Main
+              else do
+                page <- toString <$> T.stripPrefix "page/" (toText fp)
+                p <- Page <$> readMaybe page
+                pure $ PaginatedRoute_OnPage p
+        )
+  routeUniverse m =
+    -- TODO: How to tell the other pages to generate?
+    PaginatedRoute_Main : fmap (PaginatedRoute_OnPage . Page) [2 .. (length $ pages m)]
+
 data ListingRoute
   = ListingRoute_MultiVersion
-  | ListingRoute_All
+  | ListingRoute_All (PaginatedRoute (NonEmpty Pkg))
   | ListingRoute_Broken
-  deriving stock (Show, Eq, Ord, Generic, Enum, Bounded)
+  deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
   deriving
     (HasSubRoutes, HasSubModels, IsRoute)
     via ( GenericRoute
             ListingRoute
-            '[ WithModel ()
+            '[ WithModel [NonEmpty Pkg]
              , WithSubRoutes
                 '[ FileRoute "index.html"
-                 , FileRoute "all.html"
+                 , FolderRoute "all" (PaginatedRoute (NonEmpty Pkg))
                  , FileRoute "broken.html"
+                 ]
+             ]
+        )
+
+data GhcRoute
+  = GhcRoute_Index ListingRoute
+  | GhcRoute_Package Text
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
+  deriving
+    (HasSubRoutes, IsRoute)
+    via ( GenericRoute
+            GhcRoute
+            '[ WithModel (Map Text (NonEmpty Pkg))
+             , WithSubRoutes
+                '[ ListingRoute
+                 , FolderRoute "p" (StringRoute (NonEmpty Pkg) Text)
+                 ]
+             ]
+        )
+
+instance HasSubModels GhcRoute where
+  subModels m =
+    SOP.I (Map.elems m) SOP.:* SOP.I m SOP.:* SOP.Nil
+
+data HtmlRoute
+  = HtmlRoute_GHC (Text, GhcRoute)
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
+  deriving
+    (HasSubRoutes, HasSubModels, IsRoute)
+    via ( GenericRoute
+            HtmlRoute
+            '[ WithModel NixData
+             , WithSubRoutes
+                '[ MapRoute Text GhcRoute
+                 ]
+             ]
+        )
+
+type StaticRoute = SR.StaticRoute "static"
+
+data Route
+  = Route_Html HtmlRoute
+  | Route_Static StaticRoute
+  deriving stock (Eq, Show, Ord, Generic)
+  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
+  deriving
+    (HasSubRoutes, HasSubModels, IsRoute)
+    via ( GenericRoute
+            Route
+            '[ WithModel Model
+             , WithSubRoutes
+                '[ HtmlRoute
+                 , StaticRoute
                  ]
              ]
         )
@@ -84,54 +190,3 @@ instance (IsRoute r, IsString k, ToString k, Ord k, Show r) => IsRoute (MapRoute
           _ -> error "T.breakOn: impossible"
 
   routeUniverse rs = concatMap (\(a, m) -> MapRoute . (a,) <$> routeUniverse m) $ Map.toList rs
-
-data GhcRoute
-  = GhcRoute_Index ListingRoute
-  | GhcRoute_Package Text
-  deriving stock (Show, Eq, Ord, Generic)
-  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
-  deriving
-    (HasSubRoutes, HasSubModels, IsRoute)
-    via ( GenericRoute
-            GhcRoute
-            '[ WithModel (Map Text (NonEmpty Pkg))
-             , WithSubRoutes
-                '[ ListingRoute
-                 , FolderRoute "p" (StringRoute (NonEmpty Pkg) Text)
-                 ]
-             ]
-        )
-
-data HtmlRoute
-  = HtmlRoute_GHC (Text, GhcRoute)
-  deriving stock (Show, Eq, Ord, Generic)
-  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
-  deriving
-    (HasSubRoutes, HasSubModels, IsRoute)
-    via ( GenericRoute
-            HtmlRoute
-            '[ WithModel NixData
-             , WithSubRoutes
-                '[ MapRoute Text GhcRoute
-                 ]
-             ]
-        )
-
-type StaticRoute = SR.StaticRoute "static"
-
-data Route
-  = Route_Html HtmlRoute
-  | Route_Static StaticRoute
-  deriving stock (Eq, Show, Ord, Generic)
-  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
-  deriving
-    (HasSubRoutes, HasSubModels, IsRoute)
-    via ( GenericRoute
-            Route
-            '[ WithModel Model
-             , WithSubRoutes
-                '[ HtmlRoute
-                 , StaticRoute
-                 ]
-             ]
-        )

@@ -2,6 +2,7 @@
 
 module NHI.View where
 
+import Data.List ((!!))
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
 import Data.Text qualified as T
@@ -44,15 +45,26 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
     let numTotal = length pkgs
         numHere = length pkgs'
         pkgs' = case lr of
-          ListingRoute_All -> pkgs
+          ListingRoute_All (unPage . getPage -> page) ->
+            pages (Map.toList pkgs) !! (page - 1)
           ListingRoute_MultiVersion ->
-            Map.filter (\xs -> length xs > 1) pkgs
+            Map.toList $ Map.filter (\xs -> length xs > 1) pkgs
           ListingRoute_Broken ->
-            Map.filter (any (\Pkg {..} -> pname == name && broken)) pkgs
+            Map.toList $ Map.filter (any (\Pkg {..} -> pname == name && broken)) pkgs
     H.div ! A.class_ "my-2 italic" $ do
       "Displaying "
       H.toHtml @Text $ show numHere <> " / " <> show numTotal <> " packages"
-    forM_ (Map.toList pkgs') $ \(k, vers) -> do
+    H.div ! A.class_ "flex flex-row text-xs space-x-1" $ do
+      case lr of
+        ListingRoute_All (unPage . getPage -> page) -> do
+          let total = length $ pages (Map.toList pkgs)
+          forM_ [1 .. total] $ \i -> do
+            if i == page
+              then H.b $ H.toHtml @Text $ show i
+              else H.a ! A.class_ "underline" ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_All $ PaginatedRoute_OnPage $ Page i)) $ H.toHtml @Text $ show i
+        _ ->
+          "NOn paginagted"
+    forM_ pkgs' $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-4 hover:underline" $
           H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Package k)) $
@@ -103,10 +115,19 @@ renderNavbar rp Model {..} (HtmlRoute_GHC (k0, subRoute0)) =
                   ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
                   ! A.class_ ("p-2 " <> extraClass)
                   $ H.toHtml (if k == "" then "default" else k)
-        let navSubRoutes :: [ListingRoute] = universe
+        let navSubRoutes :: [ListingRoute] = [ListingRoute_MultiVersion, ListingRoute_All PaginatedRoute_Main, ListingRoute_Broken]
         H.div ! A.class_ "flex flex-row space-x-4" $ do
           forM_ navSubRoutes $ \lR ->
-            let extraClass = if GhcRoute_Index lR == subRoute0 then "bg-rose-400 text-white" else "text-gray-700"
+            let same = case subRoute0 of
+                  GhcRoute_Index x -> case x of
+                    ListingRoute_All _ -> case lR of
+                      ListingRoute_All _ -> True
+                      _ -> False
+                    _ -> x == lR
+                  GhcRoute_Package _ -> case lR of
+                    ListingRoute_All _ -> True
+                    _ -> False
+                extraClass = if same then "bg-rose-400 text-white" else "text-gray-700"
                 gr = GhcRoute_Index lR
                 r = HtmlRoute_GHC (k0, GhcRoute_Index lR)
              in H.a
@@ -121,7 +142,7 @@ routeTitle (HtmlRoute_GHC (ver, r)) =
 routeTitle' :: GhcRoute -> Text
 routeTitle' r =
   case r of
-    GhcRoute_Index ListingRoute_All -> "All packages"
+    GhcRoute_Index (ListingRoute_All page) -> "All packages"
     GhcRoute_Index ListingRoute_MultiVersion -> "Multi-version packages"
     GhcRoute_Index ListingRoute_Broken -> "Broken packages"
     GhcRoute_Package pname -> pname
