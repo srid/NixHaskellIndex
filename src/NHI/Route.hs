@@ -64,13 +64,13 @@ instance IsRoute (PaginatedRoute a) where
       prism'
         ( \case
             PaginatedRoute_Main -> "index.html"
-            PaginatedRoute_OnPage page -> "page/" <> toString page
+            PaginatedRoute_OnPage page -> "page/" <> toString page <> ".html"
         )
         ( \fp -> do
             if fp == "index.html"
               then pure PaginatedRoute_Main
               else do
-                page <- toString <$> T.stripPrefix "page/" (toText fp)
+                page <- fmap toString $ T.stripSuffix ".html" =<< T.stripPrefix "page/" (toText fp)
                 p <- Page <$> readMaybe page
                 pure $ PaginatedRoute_OnPage p
         )
