@@ -107,15 +107,20 @@ renderNavbar rp Model {..} (HtmlRoute_GHC (k0, subRoute0)) =
         H.div ! A.class_ "flex flex-row space-x-4" $ do
           forM_ navSubRoutes $ \lR ->
             let extraClass = if GhcRoute_Index lR == subRoute0 then "bg-rose-400 text-white" else "text-gray-700"
+                gr = GhcRoute_Index lR
                 r = HtmlRoute_GHC (k0, GhcRoute_Index lR)
              in H.a
                   ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
                   ! A.class_ ("p-2 " <> extraClass)
-                  $ H.toHtml (routeTitle r)
+                  $ H.toHtml (routeTitle' gr)
 
 routeTitle :: HtmlRoute -> Text
 routeTitle (HtmlRoute_GHC (ver, r)) =
-  (<> ghcVerSuffix ver) $ case r of
+  (<> ghcVerSuffix ver) $ routeTitle' r
+
+routeTitle' :: GhcRoute -> Text
+routeTitle' r =
+  case r of
     GhcRoute_Index ListingRoute_All -> "All packages"
     GhcRoute_Index ListingRoute_MultiVersion -> "Multi-version packages"
     GhcRoute_Index ListingRoute_Broken -> "Broken packages"
