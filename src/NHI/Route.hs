@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module NHI.Route where
@@ -80,7 +81,7 @@ instance IsRoute (PaginatedRoute a) where
 data ListingRoute
   = ListingRoute_MultiVersion
   | ListingRoute_All (PaginatedRoute (NonEmpty Pkg))
-  | ListingRoute_Broken
+  | ListingRoute_Broken (PaginatedRoute (NonEmpty Pkg))
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
   deriving
@@ -91,7 +92,7 @@ data ListingRoute
              , WithSubRoutes
                 '[ FileRoute "index.html"
                  , FolderRoute "all" (PaginatedRoute (NonEmpty Pkg))
-                 , FileRoute "broken.html"
+                 , FolderRoute "broken" (PaginatedRoute (NonEmpty Pkg))
                  ]
              ]
         )
@@ -99,13 +100,14 @@ data ListingRoute
 -- | Like (==) but ignores the pagination
 listingEq :: ListingRoute -> ListingRoute -> Bool
 listingEq (ListingRoute_All _) (ListingRoute_All _) = True
+listingEq (ListingRoute_Broken _) (ListingRoute_Broken _) = True
 listingEq x y = x == y
 
 instance HasSubModels ListingRoute where
   subModels m =
     SOP.I () -- (filter (\xs -> length xs > 1) m)
       SOP.:* SOP.I (pages m)
-      SOP.:* SOP.I ()
+      SOP.:* SOP.I (pages $ filter (any (\Pkg {..} -> pname == name && broken)) m)
       SOP.:* SOP.Nil
 
 data GhcRoute
