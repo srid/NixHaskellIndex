@@ -4,6 +4,7 @@ module NHI.View where
 
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
+import Data.Text qualified as T
 import Ema qualified
 import NHI.Route
 import NHI.Types
@@ -30,13 +31,13 @@ renderAbout nixpkgsRev ghcVer = do
       H.a ! A.class_ "underline" ! A.href "https://github.com/srid/NixHaskellIndex" $ "here"
       "."
     H.p ! A.class_ "mt-2" $ do
-      "All data on this site is based on "
+      "All data on this part of the site is based on "
       let url = "https://github.com/NixOS/nixpkgs/tree/" <> nixpkgsRev
-      H.a ! A.class_ "underline" ! A.href (H.toValue url) $ H.toHtml $ "github:NixOS/nixpkgs/" <> nixpkgsRev
-      " as evaluated on x86_64-linux."
-    H.p ! A.class_ "mt-2" $ do
-      "You are viewing GHC version: "
-      H.toHtml $ if ghcVer == "" then "default (pkgs.haskellPackages)" else ghcVer
+      H.code $ H.a ! A.class_ "underline" ! A.href (H.toValue url) $ H.toHtml $ "github:NixOS/nixpkgs/" <> nixpkgsRev
+      " as evaluated on "
+      H.code "x86_64-linux" -- FIXME: make it dynamic
+      " for the package set "
+      H.code $ H.toHtml $ pkgSetForGhcVer ghcVer
 
 renderGhcRoute :: Prism' FilePath Route -> Map Text (NonEmpty Pkg) -> Text -> (Text, GhcRoute) -> H.Html
 renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
@@ -66,8 +67,12 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
         H.code $ do
           H.toHtml @Text $ "$ nix repl github:NixOS/nixpkgs/" <> nixpkgsRev <> "\n"
           H.toHtml @Text $ "nix-repl> pkgs = legacyPackages.${builtins.currentSystem}\n"
-          H.toHtml @Text $ "nix-repl> pkgs.haskellPackages." <> name <> "  # Hit <tab> here to autocomplete versions\n"
+          H.toHtml @Text $ "nix-repl> " <> pkgSetForGhcVer ghcVer <> "." <> name <> "  # Hit <tab> here to autocomplete versions\n"
           H.toHtml @Text "«derivation /nix/store/???.drv»"
+
+pkgSetForGhcVer :: Text -> Text
+pkgSetForGhcVer ghcVer =
+  if ghcVer == "" then "pkgs.haskellPackages" else "pkgs.haskell.packages.ghc" <> T.replace "." "" ghcVer
 
 renderVersions :: Text -> NonEmpty Pkg -> H.Html
 renderVersions k vers =
