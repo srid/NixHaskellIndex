@@ -71,10 +71,6 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
           H.toHtml @Text $ "nix-repl> " <> pkgSetForGhcVer ghcVer <> "." <> name <> "  # Hit <tab> here to autocomplete versions\n"
           H.toHtml @Text "«derivation /nix/store/???.drv»"
 
-pkgSetForGhcVer :: Text -> Text
-pkgSetForGhcVer ghcVer =
-  if ghcVer == "" then "pkgs.haskellPackages" else "pkgs.haskell.packages.ghc" <> T.replace "." "" ghcVer
-
 renderVersions :: Text -> NonEmpty Pkg -> H.Html
 renderVersions k vers =
   H.div ! A.class_ "flex flex-col" $ do
@@ -90,6 +86,7 @@ renderVersions k vers =
           H.span ! A.class_ "bg-red-200 px-0.5 font-bold small rounded" $ do
             "broken"
 
+bodyBg :: H.AttributeValue
 bodyBg = "bg-gray-700"
 
 renderNavbar :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
@@ -117,11 +114,20 @@ renderNavbar rp Model {..} (HtmlRoute_GHC (k0, subRoute0)) =
                   $ H.toHtml (routeTitle r)
 
 routeTitle :: HtmlRoute -> Text
-routeTitle r = case r of
-  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_All) -> "All packages"
-  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_MultiVersion) -> "Multi-version packages"
-  HtmlRoute_GHC (ver, GhcRoute_Index ListingRoute_Broken) -> "Broken packages"
-  HtmlRoute_GHC (ver, GhcRoute_Package pname) -> pname
+routeTitle (HtmlRoute_GHC (ver, r)) =
+  (<> ghcVerSuffix ver) $ case r of
+    GhcRoute_Index ListingRoute_All -> "All packages"
+    GhcRoute_Index ListingRoute_MultiVersion -> "Multi-version packages"
+    GhcRoute_Index ListingRoute_Broken -> "Broken packages"
+    GhcRoute_Package pname -> pname
+
+ghcVerSuffix :: Text -> Text
+ghcVerSuffix ghcVer =
+  if ghcVer == "" then "" else " - GHC " <> ghcVer
+
+pkgSetForGhcVer :: Text -> Text
+pkgSetForGhcVer ghcVer =
+  if ghcVer == "" then "pkgs.haskellPackages" else "pkgs.haskell.packages.ghc" <> T.replace "." "" ghcVer
 
 routeUrl :: forall {r}. Prism' FilePath r -> r -> Text
 routeUrl = Ema.routeUrlWith Ema.UrlPretty
