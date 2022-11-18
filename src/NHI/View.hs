@@ -119,11 +119,7 @@ renderNavbar rp Model {..} (HtmlRoute_GHC (k0, subRoute0)) =
         H.div ! A.class_ "flex flex-row space-x-4" $ do
           forM_ navSubRoutes $ \lR ->
             let same = case subRoute0 of
-                  GhcRoute_Index x -> case x of
-                    ListingRoute_All _ -> case lR of
-                      ListingRoute_All _ -> True
-                      _ -> False
-                    _ -> x == lR
+                  GhcRoute_Index x -> listingEq x lR
                   GhcRoute_Package _ -> case lR of
                     ListingRoute_All _ -> True
                     _ -> False

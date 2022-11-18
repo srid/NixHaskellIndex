@@ -56,8 +56,8 @@ fromPage = \case
   Page 1 -> PaginatedRoute_Main
   p -> PaginatedRoute_OnPage p
 
-instance Paged a => IsRoute (PaginatedRoute a) where
-  type RouteModel (PaginatedRoute a) = [a]
+instance IsRoute (PaginatedRoute a) where
+  type RouteModel (PaginatedRoute a) = [[a]]
   routePrism m =
     toPrism_ $
       prism'
@@ -75,7 +75,7 @@ instance Paged a => IsRoute (PaginatedRoute a) where
         )
   routeUniverse m =
     -- TODO: How to tell the other pages to generate?
-    PaginatedRoute_Main : fmap (PaginatedRoute_OnPage . Page) [2 .. (length $ pages m)]
+    PaginatedRoute_Main : fmap (PaginatedRoute_OnPage . Page) [2 .. (length m)]
 
 data ListingRoute
   = ListingRoute_MultiVersion
@@ -84,7 +84,7 @@ data ListingRoute
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
   deriving
-    (HasSubRoutes, HasSubModels, IsRoute)
+    (HasSubRoutes, IsRoute)
     via ( GenericRoute
             ListingRoute
             '[ WithModel [NonEmpty Pkg]
@@ -95,6 +95,18 @@ data ListingRoute
                  ]
              ]
         )
+
+-- | Like (==) but ignores the pagination
+listingEq :: ListingRoute -> ListingRoute -> Bool
+listingEq (ListingRoute_All _) (ListingRoute_All _) = True
+listingEq x y = x == y
+
+instance HasSubModels ListingRoute where
+  subModels m =
+    SOP.I () -- (filter (\xs -> length xs > 1) m)
+      SOP.:* SOP.I (pages m)
+      SOP.:* SOP.I ()
+      SOP.:* SOP.Nil
 
 data GhcRoute
   = GhcRoute_Index ListingRoute
