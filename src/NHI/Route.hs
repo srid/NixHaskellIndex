@@ -66,8 +66,8 @@ instance HasSubModels ListingRoute where
       SOP.:* SOP.I (pages $ filter (\(_, v) -> any (\Pkg {..} -> pname == name && broken) v) m)
       SOP.:* SOP.Nil
     where
-      pages :: [a] -> [[a]]
-      pages xs = fmap toList . toList $ chunksOf pageSize (Seq.fromList xs)
+      pages :: [a] -> NonEmpty [a]
+      pages xs = fromMaybe (one mempty) . nonEmpty . fmap toList . toList $ chunksOf pageSize (Seq.fromList xs)
         where
           pageSize :: Int
           pageSize = 500

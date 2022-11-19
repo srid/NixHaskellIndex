@@ -4,7 +4,6 @@ module NHI.View where
 
 import Data.Default (def)
 import Data.Map.Strict qualified as Map
-import Data.Maybe (fromJust)
 import Data.Text qualified as T
 import Ema qualified
 import Ema.Route.Generic (HasSubModels (subModels))
@@ -26,7 +25,7 @@ import Text.Blaze.Html5.Attributes qualified as A
 renderRoute :: Prism' FilePath Route -> NixData -> HtmlRoute -> H.Html
 renderRoute rp NixData {..} = \case
   HtmlRoute_GHC (ghcVer, ghcRoute) -> do
-    let pkgs = fromJust $ Map.lookup ghcVer packages
+    let pkgs = fromMaybe (error $ "Bad ghcVer lookup: " <> ghcVer) $ Map.lookup ghcVer packages
     renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute)
 
 renderAbout :: Text -> Text -> H.Html
@@ -52,7 +51,7 @@ renderGhcRoute :: Prism' FilePath Route -> Map Text (NonEmpty Pkg) -> Text -> (T
 renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
   GhcRoute_Index lr -> do
     let I mMulti :* I mAll :* I mBroken :* Nil = subModels @ListingRoute $ Map.toList pkgs
-        (pkgPages, pageR) = case lr of
+        (pkgPages :: NonEmpty [(Text, NonEmpty Pkg)], pageR) = case lr of
           ListingRoute_MultiVersion pr ->
             (mMulti, pr)
           ListingRoute_All pr ->
@@ -73,14 +72,14 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
           H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_Broken $ fromPage p)
       _ ->
         mempty
-    forM_ (fromJust $ lookupPage pageR pkgPages) $ \(k, vers) -> do
+    forM_ (fromMaybe (error "No pages!") $ lookupPage pageR pkgPages) $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-4 hover:underline" $
           H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Package k)) $
             H.toHtml k
         renderVersions k vers
   GhcRoute_Package name -> do
-    let vers = fromJust $ Map.lookup name pkgs
+    let vers = fromMaybe (error $ "Bad package lookup: " <> name) $ Map.lookup name pkgs
     H.div ! A.class_ "mt-4" $ do
       renderVersions name vers
     H.div ! A.class_ "mt-8 prose" $ do
@@ -92,7 +91,7 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
           H.toHtml @Text $ "nix-repl> " <> pkgSetForGhcVer ghcVer <> "." <> name <> "  # Hit <tab> here to autocomplete versions\n"
           H.toHtml @Text "«derivation /nix/store/???.drv»"
 
-renderPagination :: [[a]] -> PaginatedRoute a -> (Page -> H.AttributeValue) -> H.Html
+renderPagination :: NonEmpty [a] -> PaginatedRoute a -> (Page -> H.AttributeValue) -> H.Html
 renderPagination xs pageR pageUrl =
   H.div ! A.class_ "flex flex-row text-sm space-x-1 text-blue-500" $ do
     forM_ [1 :: Page .. (fromInteger . toInteger $ length xs)] $ \i -> do
