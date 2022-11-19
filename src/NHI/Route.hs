@@ -40,8 +40,8 @@ data ListingRoute
             ListingRoute
             '[ WithModel [(Text, NonEmpty Pkg)]
              , WithSubRoutes
-                '[ PaginatedListingRoute
-                 , FolderRoute "all" PaginatedListingRoute
+                '[ FolderRoute "multi" PaginatedListingRoute
+                 , PaginatedListingRoute
                  , FolderRoute "broken" PaginatedListingRoute
                  ]
              ]
