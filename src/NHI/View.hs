@@ -126,7 +126,7 @@ renderNavbar rp Model {..} (HtmlRoute_GHC (k0, subRoute0)) =
         H.div ! A.class_ "flex flex-row space-x-4 mb-1" $ do
           forM_ navRoutes $ \k ->
             let extraClass = if k == k0 then "bg-rose-400 text-white" else "text-gray-700"
-                r = HtmlRoute_GHC (k, GhcRoute_Index $ ListingRoute_MultiVersion def)
+                r = HtmlRoute_GHC (k, GhcRoute_Index def)
              in H.a
                   ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
                   ! A.class_ ("p-2 " <> extraClass)

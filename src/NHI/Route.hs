@@ -7,6 +7,7 @@
 
 module NHI.Route where
 
+import Data.Default (Default (..))
 import Data.Map.Strict qualified as Map
 import Data.Sequence (chunksOf)
 import Data.Sequence qualified as Seq
@@ -46,6 +47,9 @@ data ListingRoute
                  ]
              ]
         )
+
+instance Default ListingRoute where
+  def = ListingRoute_All def
 
 listingRoutePage :: ListingRoute -> Page
 listingRoutePage = \case
