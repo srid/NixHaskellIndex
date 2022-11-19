@@ -1,5 +1,5 @@
 # Nix to generate data to be parsed into NHI/Types.hs
-{ inputs, pkgs, lib }:
+{ inputs, pkgs, lib, system }:
 let
   groupLibraries = packageSet: builtins.groupBy (x: x.pname)
     (lib.mapAttrsToList
@@ -22,6 +22,8 @@ in
         "" = pkgs.haskellPackages;
         "9.4.3" = pkgs.haskell.packages.ghc943;
         "9.2.5" = pkgs.haskell.packages.ghc925;
+        "horizon-9.4.2" = inputs.horizon-platform.packages.${system};
+        "horizon-plutus-9.4.2" = inputs.horizon-plutus.packages.${system};
       };
     in
     lib.mapAttrs
