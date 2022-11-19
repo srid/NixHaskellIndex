@@ -14,7 +14,7 @@ import Data.Sequence qualified as Seq
 import Ema (IsRoute)
 import Ema.Route.Generic
 import Ema.Route.Lib.Extra.MapRoute (MapRoute (..))
-import Ema.Route.Lib.Extra.PaginatedRoute (Page, PaginatedRoute, getPage)
+import Ema.Route.Lib.Extra.PaginatedRoute (Page)
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
 import Ema.Route.Lib.Extra.StringRoute (StringRoute (StringRoute))
 import Generics.SOP qualified as SOP
@@ -27,12 +27,12 @@ data Model = Model
   }
   deriving stock (Eq, Show, Generic)
 
-type PaginatedListingRoute = PaginatedRoute (Text, NonEmpty Pkg)
+type PkgsetPage = Page (Text, NonEmpty Pkg)
 
 data ListingRoute
-  = ListingRoute_MultiVersion PaginatedListingRoute
-  | ListingRoute_All PaginatedListingRoute
-  | ListingRoute_Broken PaginatedListingRoute
+  = ListingRoute_MultiVersion PkgsetPage
+  | ListingRoute_All PkgsetPage
+  | ListingRoute_Broken PkgsetPage
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
   deriving
@@ -41,9 +41,9 @@ data ListingRoute
             ListingRoute
             '[ WithModel [(Text, NonEmpty Pkg)]
              , WithSubRoutes
-                '[ FolderRoute "multi" PaginatedListingRoute
-                 , PaginatedListingRoute
-                 , FolderRoute "broken" PaginatedListingRoute
+                '[ FolderRoute "multi" PkgsetPage
+                 , PkgsetPage
+                 , FolderRoute "broken" PkgsetPage
                  ]
              ]
         )
@@ -51,11 +51,11 @@ data ListingRoute
 instance Default ListingRoute where
   def = ListingRoute_All def
 
-listingRoutePage :: ListingRoute -> Page
+listingRoutePage :: ListingRoute -> PkgsetPage
 listingRoutePage = \case
-  ListingRoute_MultiVersion r -> getPage r
-  ListingRoute_All r -> getPage r
-  ListingRoute_Broken r -> getPage r
+  ListingRoute_MultiVersion r -> r
+  ListingRoute_All r -> r
+  ListingRoute_Broken r -> r
 
 -- | Like (==) but ignores the pagination
 listingEq :: ListingRoute -> ListingRoute -> Bool

@@ -9,11 +9,8 @@ import Ema qualified
 import Ema.Route.Generic (HasSubModels (subModels))
 import Ema.Route.Lib.Extra.PaginatedRoute (
   Page,
-  PaginatedRoute,
-  fromPage,
-  getPage,
-  lookupPage,
  )
+import Ema.Route.Lib.Extra.PaginatedRoute qualified as PR
 import Generics.SOP (I (..), NP (..))
 import NHI.Route
 import NHI.Types
@@ -51,7 +48,7 @@ renderGhcRoute :: Prism' FilePath Route -> Map Text (NonEmpty Pkg) -> Text -> (T
 renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
   GhcRoute_Index lr -> do
     let I mMulti :* I mAll :* I mBroken :* Nil = subModels @ListingRoute $ Map.toList pkgs
-        (pkgPages :: NonEmpty [(Text, NonEmpty Pkg)], pageR) = case lr of
+        (pkgPages :: NonEmpty [(Text, NonEmpty Pkg)], page) = case lr of
           ListingRoute_MultiVersion pr ->
             (mMulti, pr)
           ListingRoute_All pr ->
@@ -66,13 +63,13 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
     case lr of
       ListingRoute_All r -> do
         renderPagination pkgPages r $ \p ->
-          H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_All $ fromPage p)
+          H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_All p)
       ListingRoute_Broken r -> do
         renderPagination pkgPages r $ \p ->
-          H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_Broken $ fromPage p)
+          H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_Broken p)
       _ ->
         mempty
-    forM_ (fromMaybe (error "No pages!") $ lookupPage pageR pkgPages) $ \(k, vers) -> do
+    forM_ (PR.lookupPage page pkgPages) $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-4 hover:underline" $
           H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Package k)) $
@@ -91,13 +88,14 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
           H.toHtml @Text $ "nix-repl> " <> pkgSetForGhcVer ghcVer <> "." <> name <> "  # Hit <tab> here to autocomplete versions\n"
           H.toHtml @Text "«derivation /nix/store/???.drv»"
 
-renderPagination :: NonEmpty [a] -> PaginatedRoute a -> (Page -> H.AttributeValue) -> H.Html
-renderPagination xs pageR pageUrl =
+renderPagination :: NonEmpty [a] -> Page a -> (Page a -> H.AttributeValue) -> H.Html
+renderPagination xs page pageUrl =
   H.div ! A.class_ "flex flex-row text-sm space-x-1 text-blue-500" $ do
-    forM_ [1 :: Page .. (fromInteger . toInteger $ length xs)] $ \i -> do
-      if i == getPage pageR
-        then H.b $ H.toHtml @Text $ show i
-        else H.a ! A.class_ "hover:underline opacity-50 hover:opacity-100" ! A.href (pageUrl i) $ H.toHtml @Text $ show i
+    forM_ (PR.pageRange $ length xs) $ \i -> do
+      let num = show $ PR.pageNum i
+      if i == page
+        then H.b $ H.toHtml @Text $ num
+        else H.a ! A.class_ "hover:underline opacity-50 hover:opacity-100" ! A.href (pageUrl i) $ H.toHtml @Text $ num
 
 renderVersions :: Text -> NonEmpty Pkg -> H.Html
 renderVersions k vers =
@@ -156,7 +154,7 @@ routeTitle' r =
   case r of
     GhcRoute_Index lr ->
       let page = listingRoutePage lr
-       in (if page == 1 then "" else "Page " <> show page <> " of ") <> case lr of
+       in (if page == def then "" else show page <> " of ") <> case lr of
             ListingRoute_MultiVersion _ -> "Multi-version packages"
             ListingRoute_All _ -> "All packages"
             ListingRoute_Broken _ -> "Broken packages"
