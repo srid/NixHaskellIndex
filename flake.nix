@@ -20,7 +20,7 @@
       imports = [
         haskell-flake.flakeModule
       ];
-      perSystem = { self', config, inputs', system, pkgs, lib, ... }: {
+      perSystem = { self', config, inputs', pkgs, lib, ... }: {
         # "haskellProjects" comes from https://github.com/srid/haskell-flake
         haskellProjects.project = {
           packages.NixHaskellIndex.root = ./.;
@@ -54,7 +54,7 @@
         packages.data = pkgs.writeTextFile {
           name = "data";
           text =
-            let data = import ./src/NHI/data.nix { inherit inputs pkgs lib system; };
+            let data = import ./src/NHI/data.nix { inherit inputs pkgs lib; };
             in builtins.toJSON data;
         };
         packages.default = config.packages.project-NixHaskellIndex;
