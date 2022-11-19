@@ -131,7 +131,7 @@ renderNavbar rp Model {..} (HtmlRoute_GHC (k0, subRoute0)) =
                   ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
                   ! A.class_ ("p-2 " <> extraClass)
                   $ H.toHtml (if k == "" then "default" else k)
-        let navSubRoutes :: [ListingRoute] = [ListingRoute_MultiVersion def, ListingRoute_All def, ListingRoute_Broken def]
+        let navSubRoutes :: [ListingRoute] = [ListingRoute_All def, ListingRoute_MultiVersion def, ListingRoute_Broken def]
         H.div ! A.class_ "flex flex-row space-x-4" $ do
           forM_ navSubRoutes $ \lR ->
             let same = case subRoute0 of
