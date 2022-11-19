@@ -2,11 +2,14 @@
 
 module NHI.View where
 
+import Data.Default (def)
 import Data.List ((!!))
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
 import Data.Text qualified as T
 import Ema qualified
+import Ema.Route.Generic (HasSubModels (subModels))
+import Generics.SOP (I (..), NP (..))
 import NHI.Route
 import NHI.Types
 import Optics.Core
@@ -43,33 +46,30 @@ renderGhcRoute :: Prism' FilePath Route -> Map Text (NonEmpty Pkg) -> Text -> (T
 renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
   GhcRoute_Index lr -> do
     let numTotal = length pkgs
-        numHere = length pkgs'
-        (pkgs', pkgsPage) = case lr of
+        numHere = sum $ length <$> pkgPages
+        I mMulti :* I mAll :* I mBroken :* Nil = subModels @ListingRoute $ Map.toList pkgs
+        (pkgPages, idx) = case lr of
+          ListingRoute_MultiVersion (unPage . getPage -> page) ->
+            (mMulti, page - 1)
           ListingRoute_All (unPage . getPage -> page) ->
-            let xs = Map.toList pkgs
-             in (xs,) $ pages xs !! (page - 1)
-          ListingRoute_MultiVersion ->
-            let xs = Map.toList $ Map.filter (\xs -> length xs > 1) pkgs
-             in (xs, xs)
+            (mAll, page - 1)
           ListingRoute_Broken (unPage . getPage -> page) ->
-            -- TODO: use subModels
-            let xs = (Map.toList $ Map.filter (any (\Pkg {..} -> pname == name && broken)) pkgs)
-             in (xs, pages xs !! (page - 1))
+            (mBroken, page - 1)
     H.div ! A.class_ "my-2 italic" $ do
       "Displaying "
       H.toHtml @Text $ show numHere <> " / " <> show numTotal <> " packages"
     case lr of
       ListingRoute_All (unPage . getPage -> page) -> do
-        let total = length $ pages pkgs'
+        let total = length pkgPages
         renderPagination total page $ \p ->
           H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_All $ fromPage p)
       ListingRoute_Broken (unPage . getPage -> page) -> do
-        let total = length $ pages pkgs'
+        let total = length pkgPages
         renderPagination total page $ \p ->
           H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_Broken $ fromPage p)
       _ ->
         mempty
-    forM_ pkgsPage $ \(k, vers) -> do
+    forM_ (pkgPages !! idx) $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-4 hover:underline" $
           H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Package k)) $
@@ -123,12 +123,12 @@ renderNavbar rp Model {..} (HtmlRoute_GHC (k0, subRoute0)) =
         H.div ! A.class_ "flex flex-row space-x-4 mb-1" $ do
           forM_ navRoutes $ \k ->
             let extraClass = if k == k0 then "bg-rose-400 text-white" else "text-gray-700"
-                r = HtmlRoute_GHC (k, GhcRoute_Index ListingRoute_MultiVersion)
+                r = HtmlRoute_GHC (k, GhcRoute_Index $ ListingRoute_MultiVersion def)
              in H.a
                   ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
                   ! A.class_ ("p-2 " <> extraClass)
                   $ H.toHtml (if k == "" then "default" else k)
-        let navSubRoutes :: [ListingRoute] = [ListingRoute_MultiVersion, ListingRoute_All PaginatedRoute_Main, ListingRoute_Broken PaginatedRoute_Main]
+        let navSubRoutes :: [ListingRoute] = [ListingRoute_MultiVersion def, ListingRoute_All def, ListingRoute_Broken def]
         H.div ! A.class_ "flex flex-row space-x-4" $ do
           forM_ navSubRoutes $ \lR ->
             let same = case subRoute0 of
@@ -152,7 +152,7 @@ routeTitle' :: GhcRoute -> Text
 routeTitle' r =
   case r of
     GhcRoute_Index (ListingRoute_All page) -> "All packages"
-    GhcRoute_Index ListingRoute_MultiVersion -> "Multi-version packages"
+    GhcRoute_Index (ListingRoute_MultiVersion page) -> "Multi-version packages"
     GhcRoute_Index (ListingRoute_Broken page) -> "Broken packages"
     GhcRoute_Package pname -> pname
 

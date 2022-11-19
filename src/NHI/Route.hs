@@ -4,6 +4,7 @@
 
 module NHI.Route where
 
+import Data.Default
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
 import Data.Sequence (chunksOf)
@@ -34,18 +35,12 @@ instance IsString Page where
 instance ToString Page where
   toString = show . unPage
 
-class Paged a where
-  pageSize :: Proxy a -> Int
-  pageSize Proxy = 500
-  pages :: [a] -> [[a]]
-  pages xs = fmap toList . toList $ chunksOf (pageSize @a Proxy) (Seq.fromList xs)
-
-instance Paged (NonEmpty a)
-instance Paged (Text, NonEmpty a)
-
 data PaginatedRoute (t :: Type) = PaginatedRoute_Main | PaginatedRoute_OnPage Page
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
+
+instance Default (PaginatedRoute t) where
+  def = PaginatedRoute_Main
 
 getPage :: forall {t}. PaginatedRoute t -> Page
 getPage = \case
@@ -79,20 +74,20 @@ instance IsRoute (PaginatedRoute a) where
     PaginatedRoute_Main : fmap (PaginatedRoute_OnPage . Page) [2 .. (length m)]
 
 data ListingRoute
-  = ListingRoute_MultiVersion
-  | ListingRoute_All (PaginatedRoute (NonEmpty Pkg))
-  | ListingRoute_Broken (PaginatedRoute (NonEmpty Pkg))
+  = ListingRoute_MultiVersion (PaginatedRoute (Text, NonEmpty Pkg))
+  | ListingRoute_All (PaginatedRoute (Text, NonEmpty Pkg))
+  | ListingRoute_Broken (PaginatedRoute (Text, NonEmpty Pkg))
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
   deriving
     (HasSubRoutes, IsRoute)
     via ( GenericRoute
             ListingRoute
-            '[ WithModel [NonEmpty Pkg]
+            '[ WithModel [(Text, NonEmpty Pkg)]
              , WithSubRoutes
-                '[ FileRoute "index.html"
-                 , FolderRoute "all" (PaginatedRoute (NonEmpty Pkg))
-                 , FolderRoute "broken" (PaginatedRoute (NonEmpty Pkg))
+                '[ PaginatedRoute (Text, NonEmpty Pkg)
+                 , FolderRoute "all" (PaginatedRoute (Text, NonEmpty Pkg))
+                 , FolderRoute "broken" (PaginatedRoute (Text, NonEmpty Pkg))
                  ]
              ]
         )
@@ -105,10 +100,16 @@ listingEq x y = x == y
 
 instance HasSubModels ListingRoute where
   subModels m =
-    SOP.I () -- (filter (\xs -> length xs > 1) m)
+    SOP.I (pages $ filter (\(_, xs) -> length xs > 1) m)
       SOP.:* SOP.I (pages m)
-      SOP.:* SOP.I (pages $ filter (any (\Pkg {..} -> pname == name && broken)) m)
+      SOP.:* SOP.I (pages $ filter (\(_, v) -> any (\Pkg {..} -> pname == name && broken) v) m)
       SOP.:* SOP.Nil
+    where
+      pages :: [a] -> [[a]]
+      pages xs = fmap toList . toList $ chunksOf pageSize (Seq.fromList xs)
+        where
+          pageSize :: Int
+          pageSize = 500
 
 data GhcRoute
   = GhcRoute_Index ListingRoute
@@ -129,7 +130,7 @@ data GhcRoute
 
 instance HasSubModels GhcRoute where
   subModels m =
-    SOP.I (Map.elems m) SOP.:* SOP.I m SOP.:* SOP.Nil
+    SOP.I (Map.toList m) SOP.:* SOP.I m SOP.:* SOP.Nil
 
 data HtmlRoute
   = HtmlRoute_GHC (Text, GhcRoute)
