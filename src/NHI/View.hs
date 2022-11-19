@@ -9,6 +9,13 @@ import Data.Text qualified as T
 import Ema qualified
 import Ema.Route.Generic (HasSubModels (subModels))
 import Generics.SOP (I (..), NP (..))
+import NHI.PaginatedRoute (
+  Page,
+  PaginatedRoute,
+  fromPage,
+  getPage,
+  lookupPage,
+ )
 import NHI.Route
 import NHI.Types
 import Optics.Core

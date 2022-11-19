@@ -100,6 +100,7 @@ executable NixHaskellIndex
 
   main-is:            Main.hs
   other-modules:
+    NHI.PaginatedRoute
     NHI.Route
     NHI.Site
     NHI.Types
