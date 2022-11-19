@@ -3,7 +3,6 @@
 module NHI.View where
 
 import Data.Default (def)
-import Data.List ((!!))
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
 import Data.Text qualified as T
@@ -45,31 +44,29 @@ renderAbout nixpkgsRev ghcVer = do
 renderGhcRoute :: Prism' FilePath Route -> Map Text (NonEmpty Pkg) -> Text -> (Text, GhcRoute) -> H.Html
 renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
   GhcRoute_Index lr -> do
-    let numTotal = length pkgs
-        numHere = sum $ length <$> pkgPages
-        I mMulti :* I mAll :* I mBroken :* Nil = subModels @ListingRoute $ Map.toList pkgs
-        (pkgPages, idx) = case lr of
-          ListingRoute_MultiVersion (unPage . getPage -> page) ->
-            (mMulti, page - 1)
-          ListingRoute_All (unPage . getPage -> page) ->
-            (mAll, page - 1)
-          ListingRoute_Broken (unPage . getPage -> page) ->
-            (mBroken, page - 1)
+    let I mMulti :* I mAll :* I mBroken :* Nil = subModels @ListingRoute $ Map.toList pkgs
+        (pkgPages, pageR) = case lr of
+          ListingRoute_MultiVersion pr ->
+            (mMulti, pr)
+          ListingRoute_All pr ->
+            (mAll, pr)
+          ListingRoute_Broken pr ->
+            (mBroken, pr)
     H.div ! A.class_ "my-2 italic" $ do
+      let numTotal = length pkgs
+          numHere = sum $ length <$> pkgPages
       "Displaying "
       H.toHtml @Text $ show numHere <> " / " <> show numTotal <> " packages"
     case lr of
-      ListingRoute_All (unPage . getPage -> page) -> do
-        let total = length pkgPages
-        renderPagination total page $ \p ->
+      ListingRoute_All r -> do
+        renderPagination pkgPages r $ \p ->
           H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_All $ fromPage p)
-      ListingRoute_Broken (unPage . getPage -> page) -> do
-        let total = length pkgPages
-        renderPagination total page $ \p ->
+      ListingRoute_Broken r -> do
+        renderPagination pkgPages r $ \p ->
           H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Index $ ListingRoute_Broken $ fromPage p)
       _ ->
         mempty
-    forM_ (pkgPages !! idx) $ \(k, vers) -> do
+    forM_ (fromJust $ lookupPage pageR pkgPages) $ \(k, vers) -> do
       H.div $ do
         H.header ! A.class_ "font-bold text-xl mt-4 hover:underline" $
           H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html $ HtmlRoute_GHC (ghcVer, GhcRoute_Package k)) $
@@ -88,13 +85,13 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
           H.toHtml @Text $ "nix-repl> " <> pkgSetForGhcVer ghcVer <> "." <> name <> "  # Hit <tab> here to autocomplete versions\n"
           H.toHtml @Text "«derivation /nix/store/???.drv»"
 
-renderPagination :: Int -> Int -> (Page -> H.AttributeValue) -> H.Html
-renderPagination total page pageUrl =
+renderPagination :: [[a]] -> PaginatedRoute a -> (Page -> H.AttributeValue) -> H.Html
+renderPagination xs pageR pageUrl =
   H.div ! A.class_ "flex flex-row text-sm space-x-1 text-blue-500" $ do
-    forM_ [1 .. total] $ \i -> do
-      if i == page
+    forM_ [1 :: Page .. (fromInteger . toInteger $ length xs)] $ \i -> do
+      if i == getPage pageR
         then H.b $ H.toHtml @Text $ show i
-        else H.a ! A.class_ "hover:underline opacity-50 hover:opacity-100" ! A.href (pageUrl $ Page i) $ H.toHtml @Text $ show i
+        else H.a ! A.class_ "hover:underline opacity-50 hover:opacity-100" ! A.href (pageUrl i) $ H.toHtml @Text $ show i
 
 renderVersions :: Text -> NonEmpty Pkg -> H.Html
 renderVersions k vers =
@@ -151,9 +148,12 @@ routeTitle (HtmlRoute_GHC (ver, r)) =
 routeTitle' :: GhcRoute -> Text
 routeTitle' r =
   case r of
-    GhcRoute_Index (ListingRoute_All page) -> "All packages"
-    GhcRoute_Index (ListingRoute_MultiVersion page) -> "Multi-version packages"
-    GhcRoute_Index (ListingRoute_Broken page) -> "Broken packages"
+    GhcRoute_Index lr ->
+      let page = listingRoutePage lr
+       in (if page == 1 then "" else "Page " <> show page <> " of ") <> case lr of
+            ListingRoute_MultiVersion _ -> "Multi-version packages"
+            ListingRoute_All _ -> "All packages"
+            ListingRoute_Broken _ -> "Broken packages"
     GhcRoute_Package pname -> pname
 
 ghcVerSuffix :: Text -> Text

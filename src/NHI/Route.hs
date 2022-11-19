@@ -4,7 +4,7 @@
 
 module NHI.Route where
 
-import Data.Default
+import Data.Default (Default (..))
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
 import Data.Sequence (chunksOf)
@@ -17,7 +17,7 @@ import Ema.Route.Lib.Extra.StringRoute (StringRoute (StringRoute))
 import Ema.Route.Prism (Prism_)
 import Generics.SOP qualified as SOP
 import NHI.Types (NixData, Pkg (..))
-import Optics.Core
+import Optics.Core (preview, prism', review)
 
 data Model = Model
   { modelBaseUrl :: Text
@@ -27,13 +27,7 @@ data Model = Model
   deriving stock (Eq, Show, Generic)
 
 newtype Page = Page {unPage :: Int}
-  deriving newtype (Show, Eq, Ord)
-
-instance IsString Page where
-  fromString = Page . fromJust . readMaybe
-
-instance ToString Page where
-  toString = show . unPage
+  deriving newtype (Show, Eq, Ord, Num, Enum)
 
 data PaginatedRoute (t :: Type) = PaginatedRoute_Main | PaginatedRoute_OnPage Page
   deriving stock (Show, Eq, Ord, Generic)
@@ -52,6 +46,10 @@ fromPage = \case
   Page 1 -> PaginatedRoute_Main
   p -> PaginatedRoute_OnPage p
 
+lookupPage :: PaginatedRoute a -> [[a]] -> Maybe [a]
+lookupPage r xs =
+  xs !!? (unPage (getPage r) - 1)
+
 instance IsRoute (PaginatedRoute a) where
   type RouteModel (PaginatedRoute a) = [[a]]
   routePrism m =
@@ -59,7 +57,7 @@ instance IsRoute (PaginatedRoute a) where
       prism'
         ( \case
             PaginatedRoute_Main -> "index.html"
-            PaginatedRoute_OnPage page -> "page/" <> toString page <> ".html"
+            PaginatedRoute_OnPage page -> "page/" <> show (unPage page) <> ".html"
         )
         ( \fp -> do
             if fp == "index.html"
@@ -67,16 +65,19 @@ instance IsRoute (PaginatedRoute a) where
               else do
                 page <- fmap toString $ T.stripSuffix ".html" =<< T.stripPrefix "page/" (toText fp)
                 p <- Page <$> readMaybe page
+                void $ lookupPage (fromPage p) m -- Check if this page exists
                 pure $ PaginatedRoute_OnPage p
         )
   routeUniverse m =
     -- TODO: How to tell the other pages to generate?
     PaginatedRoute_Main : fmap (PaginatedRoute_OnPage . Page) [2 .. (length m)]
 
+type PaginatedListingRoute = PaginatedRoute (Text, NonEmpty Pkg)
+
 data ListingRoute
-  = ListingRoute_MultiVersion (PaginatedRoute (Text, NonEmpty Pkg))
-  | ListingRoute_All (PaginatedRoute (Text, NonEmpty Pkg))
-  | ListingRoute_Broken (PaginatedRoute (Text, NonEmpty Pkg))
+  = ListingRoute_MultiVersion PaginatedListingRoute
+  | ListingRoute_All PaginatedListingRoute
+  | ListingRoute_Broken PaginatedListingRoute
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
   deriving
@@ -85,12 +86,18 @@ data ListingRoute
             ListingRoute
             '[ WithModel [(Text, NonEmpty Pkg)]
              , WithSubRoutes
-                '[ PaginatedRoute (Text, NonEmpty Pkg)
-                 , FolderRoute "all" (PaginatedRoute (Text, NonEmpty Pkg))
-                 , FolderRoute "broken" (PaginatedRoute (Text, NonEmpty Pkg))
+                '[ PaginatedListingRoute
+                 , FolderRoute "all" PaginatedListingRoute
+                 , FolderRoute "broken" PaginatedListingRoute
                  ]
              ]
         )
+
+listingRoutePage :: ListingRoute -> Page
+listingRoutePage = \case
+  ListingRoute_MultiVersion r -> getPage r
+  ListingRoute_All r -> getPage r
+  ListingRoute_Broken r -> getPage r
 
 -- | Like (==) but ignores the pagination
 listingEq :: ListingRoute -> ListingRoute -> Bool
