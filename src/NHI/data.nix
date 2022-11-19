@@ -13,7 +13,6 @@ let
 in
 {
   nixpkgsRev = inputs.nixpkgs.rev;
-  haskellPackages = groupLibraries pkgs.haskellPackages;
   packages =
     let
       #ghcPkgSets =
