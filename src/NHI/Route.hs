@@ -1,24 +1,23 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use newtype instead of data" #-}
 
 module NHI.Route where
 
 import Data.Map.Strict qualified as Map
-import Data.Maybe (fromJust)
 import Data.Sequence (chunksOf)
 import Data.Sequence qualified as Seq
-import Data.Text qualified as T
-import Ema
+import Ema (IsRoute)
 import Ema.Route.Generic
-import Ema.Route.Lib.Extra.MapRoute
+import Ema.Route.Lib.Extra.MapRoute (MapRoute (..))
 import Ema.Route.Lib.Extra.PaginatedRoute (Page, PaginatedRoute, getPage)
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
 import Ema.Route.Lib.Extra.StringRoute (StringRoute (StringRoute))
-import Ema.Route.Prism (Prism_)
 import Generics.SOP qualified as SOP
 import NHI.Types (NixData, Pkg (..))
-import Optics.Core (preview, prism', review)
 
 data Model = Model
   { modelBaseUrl :: Text
