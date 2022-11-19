@@ -5,6 +5,9 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     haskell-flake.url = "github:srid/haskell-flake";
 
+    horizon-platform.url = "git+https://gitlab.homotopic.tech/horizon/horizon-platform";
+    horizon-plutus.url = "git+https://gitlab.homotopic.tech/horizon/horizon-plutus";
+
     # Haskell overrides
     ema.url = "github:srid/ema/split";
     ema.flake = false;
@@ -17,7 +20,7 @@
       imports = [
         haskell-flake.flakeModule
       ];
-      perSystem = { self', config, inputs', pkgs, lib, ... }: {
+      perSystem = { self', config, inputs', system, pkgs, lib, ... }: {
         # "haskellProjects" comes from https://github.com/srid/haskell-flake
         haskellProjects.project = {
           packages.NixHaskellIndex.root = ./.;
@@ -51,7 +54,7 @@
         packages.data = pkgs.writeTextFile {
           name = "data";
           text =
-            let data = import ./src/NHI/data.nix { inherit inputs pkgs lib; };
+            let data = import ./src/NHI/data.nix { inherit inputs pkgs lib system; };
             in builtins.toJSON data;
         };
         packages.default = config.packages.project-NixHaskellIndex;
