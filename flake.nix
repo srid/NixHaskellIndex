@@ -5,6 +5,9 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     haskell-flake.url = "github:srid/haskell-flake";
 
+    horizon-platform.url = "git+https://gitlab.homotopic.tech/horizon/horizon-platform";
+    horizon-plutus.url = "git+https://gitlab.homotopic.tech/horizon/horizon-plutus";
+
     # Haskell overrides
     ema.url = "github:srid/ema";
     ema.flake = false;

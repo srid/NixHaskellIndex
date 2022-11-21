@@ -22,6 +22,8 @@ in
         "" = pkgs.haskellPackages;
         "9.4.3" = pkgs.haskell.packages.ghc943;
         "9.2.5" = pkgs.haskell.packages.ghc925;
+        "horizon-platform-9.4.2" = inputs.horizon-platform.packages."x86_64-linux";
+        "horizon-plutus-9.4.2" = inputs.horizon-plutus.packages."x86_64-linux";
       };
     in
     lib.mapAttrs
