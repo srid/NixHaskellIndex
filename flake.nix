@@ -41,14 +41,25 @@
             });
           };
         };
-        apps.tailwind.program = pkgs.haskellPackages.tailwind;
-        packages.data = pkgs.writeTextFile {
-          name = "data";
-          text =
-            let data = import ./src/NHI/data.nix { inherit inputs pkgs lib; };
-            in builtins.toJSON data;
+        packages = {
+          default = config.packages.project-NixHaskellIndex;
+          data = pkgs.writeTextFile {
+            name = "data";
+            text =
+              let data = import ./src/NHI/data.nix { inherit inputs pkgs lib; };
+              in builtins.toJSON data;
+          };
+          site = pkgs.runCommand "site"
+            { }
+            ''
+              mkdir -p $out
+              pushd ${self}
+              ${lib.getExe config.packages.default} \
+                gen $out
+              ${lib.getExe pkgs.haskellPackages.tailwind} \
+                -o $out/tailwind.css 'src/**/*.hs' 
+            '';
         };
-        packages.default = config.packages.project-NixHaskellIndex;
         devShells.default = config.devShells.project.overrideAttrs (_: {
           DATAFILE = config.packages.data;
         });

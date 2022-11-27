@@ -17,17 +17,10 @@ jobs:
             substituters = https://cache.garnix.io https://cache.nixos.org/
       - name: Cache deps and build sources 🔧
         run: |
-          nix run .#tailwind -- --help
-          nix build -j 4
-      - name: Generate HTML 🔧
-        run: |
-          mkdir ./output
-          export TARGET=$(pwd)/output
-          nix run .#tailwind -- -o static/tailwind.css 'src/**/*.hs' 
-          ./result/bin/NixHaskellIndex gen $TARGET
+          nix build -j 4 .#site
       - name: Deploy to gh-pages 🚀
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: output
+          publish_dir: result
           cname: nixpkgs.haskell.page
