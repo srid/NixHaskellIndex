@@ -8,8 +8,6 @@
     # Haskell overrides
     ema.url = "github:srid/ema";
     ema.flake = false;
-    tailwind-haskell.url = "github:srid/tailwind-haskell";
-    tailwind-haskell.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, haskell-flake, ... }:
     flake-parts.lib.mkFlake { inherit self; } {
@@ -27,11 +25,9 @@
               nixpkgs-fmt
               foreman;
             inherit (pkgs.haskellPackages)
-              cabal-fmt;
+              cabal-fmt tailwind;
             inherit (hp)
               fourmolu;
-            inherit (inputs'.tailwind-haskell.packages)
-              tailwind;
           };
           source-overrides = {
             ema = inputs.ema + /ema;
@@ -39,15 +35,13 @@
             ema-extra = inputs.ema + /ema-extra;
           };
           overrides = self: super: with pkgs.haskell.lib; {
-            inherit (inputs'.tailwind-haskell.packages)
-              tailwind;
             ema-generics = dontCheck super.ema-generics;
             NixHaskellIndex = super.NixHaskellIndex.overrideAttrs (_: {
               DATAFILE = config.packages.data;
             });
           };
         };
-        apps.tailwind.program = inputs'.tailwind-haskell.packages.tailwind;
+        apps.tailwind.program = config.packages.haskellPackages.tailwind;
         packages.data = pkgs.writeTextFile {
           name = "data";
           text =
