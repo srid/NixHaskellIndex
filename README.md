@@ -1,4 +1,9 @@
 # NixHaskellIndex
 
-`bin/run` if developing, else `nix run`.
+A site to view the Haskell packages and their versions on nixpkgs
+
+## Developping
+
+```bin/run
+```
 

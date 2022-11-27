@@ -31,7 +31,7 @@ renderAbout nixpkgsRev ghcVer = do
     H.p ! A.class_ "mt-2" $ do
       "Did you know that Haskell libraries on nixpkgs may have more than one version defined? And that the default or available versions do not necessarily correspond to that of Stackage LTS?"
     H.p ! A.class_ "mt-2" $ do
-      H.b "This project is a WIP."
+      H.b "This project is open source."
       " See the source "
       H.a ! A.class_ "underline" ! A.href "https://github.com/srid/NixHaskellIndex" $ "here"
       "."
