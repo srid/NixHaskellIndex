@@ -41,7 +41,7 @@
             });
           };
         };
-        apps.tailwind.program = config.packages.haskellPackages.tailwind;
+        apps.tailwind.program = pkgs.haskellPackages.tailwind;
         packages.data = pkgs.writeTextFile {
           name = "data";
           text =
