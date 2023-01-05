@@ -4,13 +4,9 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     haskell-flake.url = "github:srid/haskell-flake";
-
-    # Haskell overrides
-    ema.url = "github:srid/ema";
-    ema.flake = false;
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, haskell-flake, ... }:
-    flake-parts.lib.mkFlake { inherit self; } {
+    flake-parts.lib.mkFlake { inherit inputs; } {
       systems = nixpkgs.lib.systems.flakeExposed;
       imports = [
         haskell-flake.flakeModule
@@ -19,23 +15,29 @@
         # "haskellProjects" comes from https://github.com/srid/haskell-flake
         haskellProjects.project = {
           packages.NixHaskellIndex.root = ./.;
-          buildTools = hp: {
-            inherit (pkgs)
-              treefmt
-              nixpkgs-fmt
-              foreman;
-            inherit (pkgs.haskellPackages)
-              cabal-fmt tailwind;
-            inherit (hp)
-              fourmolu;
-          };
-          source-overrides = {
-            ema = inputs.ema + /ema;
-            ema-generics = inputs.ema + /ema-generics;
-            ema-extra = inputs.ema + /ema-extra;
-          };
+          buildTools = hp:
+            let
+              # Workaround for https://github.com/NixOS/nixpkgs/issues/140774
+              fixCyclicReference = drv:
+                pkgs.haskell.lib.overrideCabal drv (_: {
+                  enableSeparateBinOutput = false;
+                });
+            in
+            {
+              inherit (pkgs)
+                treefmt
+                nixpkgs-fmt
+                foreman;
+              inherit (pkgs.haskellPackages)
+                cabal-fmt tailwind;
+              inherit (hp)
+                fourmolu;
+              ghcid = fixCyclicReference hp.ghcid;
+              haskell-language-server = hp.haskell-language-server.overrideScope (lself: lsuper: {
+                ormolu = fixCyclicReference hp.ormolu;
+              });
+            };
           overrides = self: super: with pkgs.haskell.lib; {
-            ema-generics = dontCheck super.ema-generics;
             NixHaskellIndex = super.NixHaskellIndex.overrideAttrs (_: {
               DATAFILE = config.packages.data;
             });

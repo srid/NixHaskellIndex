@@ -20,8 +20,7 @@ in
       #  ++ [ pkgs.haskellPackages ];
       ghcPkgSets = {
         "" = pkgs.haskellPackages;
-        "9.4.3" = pkgs.haskell.packages.ghc943;
-        "9.2.5" = pkgs.haskell.packages.ghc925;
+        "9.4.4" = pkgs.haskell.packages.ghc944;
       };
     in
     lib.mapAttrs
