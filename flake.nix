@@ -44,8 +44,9 @@
             };
           };
         };
+        apps.default = self'.apps.project-NixHaskellIndex;
         packages = {
-          default = config.packages.project-NixHaskellIndex;
+          default = self'.packages.project-NixHaskellIndex;
           data = pkgs.writeTextFile {
             name = "data";
             text =
