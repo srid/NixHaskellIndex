@@ -14,8 +14,7 @@
       perSystem = { self', config, inputs', pkgs, lib, ... }: {
         # "haskellProjects" comes from https://github.com/srid/haskell-flake
         haskellProjects.project = {
-          packages.NixHaskellIndex.root = ./.;
-          buildTools = hp:
+          devShell.tools = hp:
             let
               # Workaround for https://github.com/NixOS/nixpkgs/issues/140774
               fixCyclicReference = drv:
@@ -37,10 +36,12 @@
                 ormolu = fixCyclicReference hp.ormolu;
               });
             };
-          overrides = self: super: with pkgs.haskell.lib; {
-            NixHaskellIndex = super.NixHaskellIndex.overrideAttrs (_: {
-              DATAFILE = config.packages.data;
-            });
+          settings = {
+            NixHaskellIndex = { self, super, ... }: {
+              custom = _: super.NixHaskellIndex.overrideAttrs (_: {
+                DATAFILE = config.packages.data;
+              });
+            };
           };
         };
         packages = {
@@ -66,7 +67,5 @@
           DATAFILE = config.packages.data;
         });
       };
-      # CI configuration
-      flake.herculesCI.ciSystems = [ "x86_64-linux" "aarch64-darwin" ];
     };
 }
