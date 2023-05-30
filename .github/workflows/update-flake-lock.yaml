@@ -11,14 +11,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Install Nix
-        uses: cachix/install-nix-action@v17
-        with:
-          extra_nix_config: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-            trusted-public-keys = cache.srid.ca:8sQkbPrOIoXktIwI0OucQBXod2e9fDjjoEZWn8OXbdo= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://cache.srid.ca https://cache.nixos.org/
+        uses: DeterminateSystems/nix-installer-action@v1
       - name: Update flake.lock
-        uses: DeterminateSystems/update-flake-lock@v14
+        uses: DeterminateSystems/update-flake-lock@v19
         with:
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
           pr-title: "Update flake.lock" # Title of PR to be created
