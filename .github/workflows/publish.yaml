@@ -8,19 +8,19 @@ jobs:
   www:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v17
-        with:
-          extra_nix_config: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-            trusted-public-keys = cache.srid.ca:8sQkbPrOIoXktIwI0OucQBXod2e9fDjjoEZWn8OXbdo= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://cache.srid.ca https://cache.nixos.org/
-      - name: Cache deps and build sources 🔧
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Install omnix
+        run: nix --accept-flake-config profile install "github:juspay/omnix"
+      - run: om ci
+      - name: Static site 🔧
+        if: github.ref == 'refs/heads/master'
         run: |
           nix build -j 4 .#site
       - name: Deploy to gh-pages 🚀
         uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/master'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: result
-          cname: nixpkgs.haskell.page
+          # cname: nixpkgs.haskell.page
