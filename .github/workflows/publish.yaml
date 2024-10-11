@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  pull_request:
 jobs:
   www:
     runs-on: ubuntu-latest
