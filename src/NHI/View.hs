@@ -25,6 +25,25 @@ renderRoute rp NixData {..} = \case
     let pkgs = fromMaybe (error $ "Bad ghcVer lookup: " <> ghcVer) $ Map.lookup ghcVer packages
     renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute)
 
+renderAbout :: Text -> Text -> H.Html
+renderAbout nixpkgsRev ghcVer = do
+  H.div ! A.class_ (bodyBg <> " text-gray-100 opacity-20 hover:opacity-100 text-xs border-2 border-gray-200 rounded shadow px-2 pb-2 mb-2") ! A.title "About this site" $ do
+    H.p ! A.class_ "mt-2" $ do
+      "Did you know that Haskell libraries on nixpkgs may have more than one version defined? And that the default or available versions do not necessarily correspond to that of Stackage LTS?"
+    H.p ! A.class_ "mt-2" $ do
+      H.b "This project is open source."
+      " See the source "
+      H.a ! A.class_ "underline" ! A.href "https://github.com/srid/NixHaskellIndex" $ "here"
+      "."
+    H.p ! A.class_ "mt-2" $ do
+      "All data on this part of the site is based on "
+      let url = "https://github.com/NixOS/nixpkgs/tree/" <> nixpkgsRev
+      H.code $ H.a ! A.class_ "underline" ! A.href (H.toValue url) $ H.toHtml $ "github:NixOS/nixpkgs/" <> nixpkgsRev
+      " as evaluated on "
+      H.code "x86_64-linux" -- FIXME: make it dynamic
+      " for the package set "
+      H.code $ H.toHtml $ pkgSetForGhcVer ghcVer
+
 renderGhcRoute :: Prism' FilePath Route -> Map Text (NonEmpty Pkg) -> Text -> (Text, GhcRoute) -> H.Html
 renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
   GhcRoute_Index lr -> do
@@ -60,7 +79,6 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
     let vers = fromMaybe (error $ "Bad package lookup: " <> name) $ Map.lookup name pkgs
     H.div ! A.class_ "mt-4" $ do
       renderVersions name vers
-{--
     H.div ! A.class_ "mt-8 prose" $ do
       H.h2 "Inspect in `nix repl`"
       H.pre ! A.class_ "bg-gray-700 text-white p-2 my-2 rounded" $ do
@@ -69,7 +87,6 @@ renderGhcRoute rp pkgs nixpkgsRev (ghcVer, ghcRoute) = case ghcRoute of
           H.toHtml @Text $ "nix-repl> pkgs = legacyPackages.${builtins.currentSystem}\n"
           H.toHtml @Text $ "nix-repl> " <> pkgSetForGhcVer ghcVer <> "." <> name <> "  # Hit <tab> here to autocomplete versions\n"
           H.toHtml @Text "«derivation /nix/store/???.drv»"
---}
 
 renderPagination :: NonEmpty [a] -> Page a -> (Page a -> H.AttributeValue) -> H.Html
 renderPagination xs page pageUrl =
@@ -111,7 +128,7 @@ renderNavbar rp Model {..} (HtmlRoute_GHC (k0, subRoute0)) =
              in H.a
                   ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
                   ! A.class_ ("p-2 " <> extraClass)
-                  $ H.toHtml (if k == "" then "default (horzion-platform/master) " else k)
+                  $ H.toHtml (if k == "" then "default" else k)
         let navSubRoutes :: [ListingRoute] = [ListingRoute_All def, ListingRoute_MultiVersion def, ListingRoute_Broken def]
         H.div ! A.class_ "flex flex-row space-x-4" $ do
           forM_ navSubRoutes $ \lR ->

@@ -1,5 +1,5 @@
 # Nix to generate data to be parsed into NHI/Types.hs
-{ inputs, pkgss, lib }:
+{ inputs, pkgs, lib }:
 let
   groupLibraries = packageSet: builtins.groupBy (x: x.pname)
     (lib.mapAttrsToList
@@ -19,15 +19,9 @@ in
       #  lib.attrValues (lib.filterAttrs (_: set: lib.hasAttr "ghc" set) pkgs.haskell.packages)
       #  ++ [ pkgs.haskellPackages ];
       ghcPkgSets = {
-        "" = pkgss.horizon.platform.master;
-        "horizon-core (master)" = pkgss.horizon.core.master;
-        "horizon-advance (master)" = pkgss.horizon.advance.master;
-        "horizon-platform (master)" = pkgss.horizon.platform.master;
-        "horizon-devtools (master)" = pkgss.horizon.devtools.master;
-        "horizon-plutus (master)" = pkgss.horizon.plutus.master;
-        "horizon-cardano (master)" = pkgss.horizon.cardano.master;
-        "nixpkgs (24.05)" = pkgss.nixpkgs."2405".haskell.packages.ghc964;
-        "nixpkgs (24.11)" = pkgss.nixpkgs."2411".haskell.packages.ghc964;
+        "" = pkgs.haskellPackages;
+        "9.4.5" = pkgs.haskell.packages.ghc945;
+        "9.6.1" = pkgs.haskell.packages.ghc961;
       };
     in
     lib.mapAttrs
