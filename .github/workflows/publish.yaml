@@ -7,21 +7,14 @@ on:
   pull_request:
 jobs:
   www:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.system }}
+    strategy:
+      matrix:
+        system: [x86_64-linux, aarch64-darwin, x86_64-darwin]
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
       - name: Install omnix
         run: nix --accept-flake-config profile install "github:juspay/omnix"
       - run: om ci
-      - name: Static site 🔧
-        if: github.ref == 'refs/heads/master'
-        run: |
-          nix build -j 4 .#site
-      - name: Deploy to gh-pages 🚀
-        uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/master'
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: result
-          # cname: nixpkgs.haskell.page
