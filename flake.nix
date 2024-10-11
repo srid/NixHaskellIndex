@@ -1,9 +1,20 @@
 {
   description = "Ema template app";
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     haskell-flake.url = "github:srid/haskell-flake";
+
+    horizon-core.url = "git+https://gitlab.horizon-haskell.net/package-sets/horizon-core";
+    horizon-advance.url = "git+https://gitlab.horizon-haskell.net/package-sets/horizon-advance";
+    horizon-platform.url = "git+https://gitlab.horizon-haskell.net/package-sets/horizon-platform";
+    horizon-devtools.url = "git+https://gitlab.horizon-haskell.net/package-sets/horizon-devtools";
+    horizon-plutus.url = "git+https://gitlab.horizon-haskell.net/package-sets/horizon-plutus";
+    horizon-cardano.url = "git+https://gitlab.horizon-haskell.net/package-sets/horizon-cardano";
+
+    nixpkgs-2405.url = "github:nixos/nixpkgs/24.05";
+    nixpkgs-2411.url = "github:nixos/nixpkgs/24.11-pre";
+
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, haskell-flake, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -11,7 +22,35 @@
       imports = [
         haskell-flake.flakeModule
       ];
-      perSystem = { self', config, inputs', pkgs, lib, ... }: {
+      perSystem = { self', config, inputs', pkgs, lib, system, ... }:
+        let pkgss = {
+              horizon = {
+                core = {
+                  master = inputs.horizon-core.packages.x86_64-linux;
+                };
+                advance = {
+                  master = inputs.horizon-advance.packages.x86_64-linux;
+                };
+                platform = {
+                  master = inputs.horizon-platform.packages.x86_64-linux;
+                };
+                devtools = {
+                  master = inputs.horizon-devtools.packages.x86_64-linux;
+                };
+                plutus = {
+                  master = inputs.horizon-platform.packages.x86_64-linux;
+                };
+                cardano = {
+                  master = inputs.horizon-cardano.packages.x86_64-linux;
+                };
+              };
+              nixpkgs = {
+                "2405" = import inputs.nixpkgs-2405 { inherit system; };
+                "2411" = import inputs.nixpkgs-2411 { inherit system; };
+              };
+            };
+        in
+        {
         # "haskellProjects" comes from https://github.com/srid/haskell-flake
         haskellProjects.project = {
           devShell.tools = hp:
@@ -50,7 +89,7 @@
           data = pkgs.writeTextFile {
             name = "data";
             text =
-              let data = import ./src/NHI/data.nix { inherit inputs pkgs lib; };
+              let data = import ./src/NHI/data.nix { inherit inputs pkgss lib; };
               in builtins.toJSON data;
           };
           site = pkgs.runCommand "site"
